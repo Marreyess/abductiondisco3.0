@@ -25,25 +25,10 @@ export class Game {
     this.duelRoom = new Image();
     this.duelRoom.src = "./assets/sala-duelo.png";
 
-    this.player = new Player(120, 120);
+    this.player = new Player(390, 430);
 
-    this.enemies = [
-      new Enemy(430, 270, "Alien"),
-      new Enemy(850, 470, "Guardia")
-    ];
+    this.alien = new Enemy(260, 410, "Alien");
 
-    this.interactable = {
-      x: 800,
-      y: 800,
-      width: 40,
-      height: 40,
-      name: "Panel de control",
-      message: "El panel está encendido, pero necesitas averiguar cómo usarlo."
-    };
-
-    this.message = "";
-    this.messageTimer = 0;
-    this.wasInteracting = false;
     this.lastTime = 0;
     this.state = "menu";
 
@@ -56,12 +41,7 @@ export class Game {
     this.backgroundVideo.load();
     this.backgroundVideo.play().catch(() => {});
 
-    this.mapBounds = {
-      left: 0,
-      top: 0,
-      right: this.canvas.width,
-      bottom: this.canvas.height
-    };
+    this.wasInteracting = false;
 
     this.buttons = {
       play: { x: 490, y: 450, width: 300, height: 100 },
@@ -98,9 +78,15 @@ export class Game {
       return;
     }
 
-    if (this.state === "credits" || this.state === "playing") {
+    if (this.state === "credits") {
       if (this.isInside(x, y, this.buttons.back)) {
         this.state = "menu";
+      }
+    }
+
+    if (this.state === "rhythm") {
+      if (this.isInside(x, y, this.buttons.back)) {
+        this.state = "playing";
       }
     }
   }
@@ -116,49 +102,15 @@ export class Game {
 
   update(deltaTime) {
     this.player.update(deltaTime, this.canvas);
-    this.limitPlayerToMap();
 
-    if (this.messageTimer > 0) {
-      this.messageTimer -= deltaTime;
-
-      if (this.messageTimer <= 0) {
-        this.message = "";
-      }
-    }
-
-    const nearObject = this.isNear(this.player, this.interactable);
-
-    const nearbyEnemy = this.enemies.find((enemy) =>
-      this.isNear(this.player, enemy)
-    );
-
-    const canInteract = nearObject || nearbyEnemy !== undefined;
     const interacting = this.player.wantsToInteract();
+    const nearAlien = this.isNear(this.player, this.alien);
 
-    if (interacting && !this.wasInteracting && canInteract) {
-      if (nearObject) {
-        this.showMessage(this.interactable.message);
-      } else if (nearbyEnemy) {
-        this.showMessage(`${nearbyEnemy.name}: ${nearbyEnemy.message}`);
-      }
+    if (interacting && !this.wasInteracting && nearAlien) {
+      this.state = "rhythm";
     }
 
     this.wasInteracting = interacting;
-  }
-
-  limitPlayerToMap() {
-    const player = this.player;
-    const bounds = this.mapBounds;
-
-    player.x = Math.max(
-      bounds.left,
-      Math.min(player.x, bounds.right - player.width)
-    );
-
-    player.y = Math.max(
-      bounds.top,
-      Math.min(player.y, bounds.bottom - player.height)
-    );
   }
 
   isNear(player, target) {
@@ -170,12 +122,7 @@ export class Game {
     const dx = playerCenterX - targetCenterX;
     const dy = playerCenterY - targetCenterY;
 
-    return Math.hypot(dx, dy) < 90;
-  }
-
-  showMessage(message) {
-    this.message = message;
-    this.messageTimer = 3.5;
+    return Math.hypot(dx, dy) < 120;
   }
 
   drawBackground() {
@@ -218,9 +165,7 @@ export class Game {
   }
 
   drawContainedImage(image, area) {
-    if (!image.complete || image.naturalWidth === 0) {
-      return;
-    }
+    if (!image.complete || image.naturalWidth === 0) return;
 
     const scale = Math.min(
       area.width / image.naturalWidth,
@@ -244,6 +189,8 @@ export class Game {
       this.drawMenu();
     } else if (this.state === "credits") {
       this.drawCredits();
+    } else if (this.state === "rhythm") {
+      this.drawRhythm();
     } else {
       this.drawGame();
     }
@@ -328,54 +275,44 @@ export class Game {
     context.clearRect(0, 0, canvas.width, canvas.height);
     this.drawDuelRoom();
 
-    this.drawBackButton();
-
-    for (const enemy of this.enemies) {
-      enemy.draw(context);
-    }
-
+    this.alien.draw(context);
     this.player.draw(context);
 
-    const nearbyObject = this.isNear(this.player, this.interactable);
-    const nearbyEnemy = this.enemies.some((enemy) =>
-      this.isNear(this.player, enemy)
-    );
-
-    if (nearbyObject || nearbyEnemy) {
-      context.fillStyle = "#ffffff";
-      context.font = "18px Arial";
-      context.fillText(
-        "Presiona E para interactuar",
-        60,
-        canvas.height - 60
-      );
-    }
-
-    if (this.message) {
-      context.fillStyle = "rgba(5, 7, 20, 0.92)";
-      context.fillRect(
-        60,
-        canvas.height - 150,
-        canvas.width - 120,
-        65
-      );
-
-      context.strokeStyle = "#70e1ff";
-      context.strokeRect(
-        60,
-        canvas.height - 150,
-        canvas.width - 120,
-        65
-      );
-
+    if (this.isNear(this.player, this.alien)) {
       context.fillStyle = "#ffffff";
       context.font = "20px Arial";
+      context.textAlign = "center";
       context.fillText(
-        this.message,
-        80,
-        canvas.height - 110,
-        canvas.width - 160
+        "Presiona E para iniciar el duelo",
+        canvas.width / 2,
+        canvas.height - 45
       );
+      context.textAlign = "start";
     }
+  }
+
+  drawRhythm() {
+    const context = this.context;
+    const canvas = this.canvas;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#101225";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    context.fillStyle = "#a6ff00";
+    context.font = "bold 48px Arial";
+    context.textAlign = "center";
+    context.fillText("JUEGO DE RITMO", canvas.width / 2, canvas.height / 2);
+
+    context.fillStyle = "#ffffff";
+    context.font = "24px Arial";
+    context.fillText(
+      "Aquí comenzará el duelo musical",
+      canvas.width / 2,
+      canvas.height / 2 + 55
+    );
+
+    this.drawBackButton();
+    context.textAlign = "start";
   }
 }

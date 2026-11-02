@@ -1,19 +1,24 @@
 export class Enemy {
-  constructor(x, y, name = "Alienígena") {
+  constructor(x, y, name = "Alien") {
     this.x = x;
     this.y = y;
-    this.width = 40;
-    this.height = 48;
+    this.width = 100;
+    this.height = 150;
     this.name = name;
-    this.message = "Parece que quiere decirte algo.";
-    this.active = true;
+
+    this.image = new Image();
+    this.image.src = "./assets/Alien/perfil_derecho.png";
   }
 
   draw(context) {
-    context.save();
-    context.strokeStyle = "#b9a0ff";
-    context.lineWidth = 2;
-    context.strokeRect(this.x, this.y, this.width, this.height);
-    context.restore();
+    if (!this.image.complete || this.image.naturalWidth === 0) return;
+
+    context.drawImage(
+      this.image,
+      this.x,
+      this.y,
+      this.width,
+      this.height
+    );
   }
 }
