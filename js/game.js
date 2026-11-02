@@ -1,3 +1,4 @@
+
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 
@@ -6,20 +7,23 @@ export class Game {
     this.canvas = canvas;
     this.context = canvas.getContext("2d");
 
+    this.canvas.width = 1280;
+    this.canvas.height = 720;
+
     this.logo = new Image();
     this.logo.src = "./assets/logo-abduccion.png";
 
     this.playImage = new Image();
     this.playImage.src = "./assets/play.png";
 
-    this.controlsImage = new Image();
-    this.controlsImage.src = "./assets/controls.png";
-
     this.creditsImage = new Image();
     this.creditsImage.src = "./assets/credits.png";
 
     this.studioLogo = new Image();
-    this.studioLogo.src = "./assets/double-m-studio.png";
+    this.studioLogo.src = "./assets/double-m-studio.jpeg";
+
+    this.duelRoom = new Image();
+    this.duelRoom.src = "./assets/sala-duelo.png";
 
     this.player = new Player(120, 120);
 
@@ -52,10 +56,16 @@ export class Game {
     this.backgroundVideo.load();
     this.backgroundVideo.play().catch(() => {});
 
+    this.mapBounds = {
+      left: 0,
+      top: 0,
+      right: this.canvas.width,
+      bottom: this.canvas.height
+    };
+
     this.buttons = {
       play: { x: 490, y: 450, width: 300, height: 100 },
-      controls: { x: 370, y: 560, width: 250, height: 75 },
-      credits: { x: 660, y: 560, width: 250, height: 75 },
+      credits: { x: 490, y: 560, width: 300, height: 75 },
       back: { x: 35, y: 28, width: 115, height: 42 }
     };
   }
@@ -81,8 +91,6 @@ export class Game {
     if (this.state === "menu") {
       if (this.isInside(x, y, this.buttons.play)) {
         this.state = "playing";
-      } else if (this.isInside(x, y, this.buttons.controls)) {
-        this.state = "controls";
       } else if (this.isInside(x, y, this.buttons.credits)) {
         this.state = "credits";
       }
@@ -90,11 +98,7 @@ export class Game {
       return;
     }
 
-    if (
-      this.state === "controls" ||
-      this.state === "credits" ||
-      this.state === "playing"
-    ) {
+    if (this.state === "credits" || this.state === "playing") {
       if (this.isInside(x, y, this.buttons.back)) {
         this.state = "menu";
       }
@@ -112,6 +116,7 @@ export class Game {
 
   update(deltaTime) {
     this.player.update(deltaTime, this.canvas);
+    this.limitPlayerToMap();
 
     if (this.messageTimer > 0) {
       this.messageTimer -= deltaTime;
@@ -141,6 +146,21 @@ export class Game {
     this.wasInteracting = interacting;
   }
 
+  limitPlayerToMap() {
+    const player = this.player;
+    const bounds = this.mapBounds;
+
+    player.x = Math.max(
+      bounds.left,
+      Math.min(player.x, bounds.right - player.width)
+    );
+
+    player.y = Math.max(
+      bounds.top,
+      Math.min(player.y, bounds.bottom - player.height)
+    );
+  }
+
   isNear(player, target) {
     const playerCenterX = player.x + player.width / 2;
     const playerCenterY = player.y + player.height / 2;
@@ -162,7 +182,7 @@ export class Game {
     const context = this.context;
     const canvas = this.canvas;
 
-    context.fillStyle = "#080713";
+    context.fillStyle = "#000000";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     if (this.backgroundVideo.readyState >= 2) {
@@ -177,6 +197,24 @@ export class Game {
 
     context.fillStyle = "rgba(5, 3, 18, 0.42)";
     context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  drawDuelRoom() {
+    const context = this.context;
+    const canvas = this.canvas;
+
+    context.fillStyle = "#000000";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (this.duelRoom.complete && this.duelRoom.naturalWidth > 0) {
+      context.drawImage(
+        this.duelRoom,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+    }
   }
 
   drawContainedImage(image, area) {
@@ -204,8 +242,6 @@ export class Game {
   draw() {
     if (this.state === "menu") {
       this.drawMenu();
-    } else if (this.state === "controls") {
-      this.drawControls();
     } else if (this.state === "credits") {
       this.drawCredits();
     } else {
@@ -228,29 +264,7 @@ export class Game {
     });
 
     this.drawImageButton(this.playImage, this.buttons.play);
-    this.drawImageButton(this.controlsImage, this.buttons.controls);
     this.drawImageButton(this.creditsImage, this.buttons.credits);
-  }
-
-  drawControls() {
-    const context = this.context;
-    const canvas = this.canvas;
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    this.drawBackground();
-
-    context.textAlign = "center";
-    context.fillStyle = "#a6ff00";
-    context.font = "bold 58px Arial";
-    context.fillText("CONTROLS", canvas.width / 2, 160);
-
-    context.fillStyle = "#ffffff";
-    context.font = "28px Arial";
-    context.fillText("WASD o flechas: moverse", canvas.width / 2, 280);
-    context.fillText("E: interactuar", canvas.width / 2, 340);
-
-    this.drawBackButton();
-    context.textAlign = "start";
   }
 
   drawCredits() {
@@ -312,33 +326,9 @@ export class Game {
     const canvas = this.canvas;
 
     context.clearRect(0, 0, canvas.width, canvas.height);
-
-    context.fillStyle = "#101225";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
-    context.strokeStyle = "#252943";
-    context.lineWidth = 3;
-    context.strokeRect(
-      35,
-      35,
-      canvas.width - 70,
-      canvas.height - 70
-    );
-
-    context.fillStyle = "#e5d7ff";
-    context.font = "24px Arial";
-    context.fillText("ÁREA CENTRAL", 60, 75);
+    this.drawDuelRoom();
 
     this.drawBackButton();
-
-    context.strokeStyle = "#70e1ff";
-    context.lineWidth = 2;
-    context.strokeRect(
-      this.interactable.x,
-      this.interactable.y,
-      this.interactable.width,
-      this.interactable.height
-    );
 
     for (const enemy of this.enemies) {
       enemy.draw(context);
