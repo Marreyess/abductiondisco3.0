@@ -1,30 +1,34 @@
+
 export class Player {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 96;
-    this.height = 144;
+    this.width = 200;
+    this.height = 200;
     this.speed = 220;
+
     this.keys = new Set();
     this.moving = false;
+    this.direction = "south";
 
-    this.idleFrames = [];
-    this.walkFrames = [];
-    this.danceFrames = [];
+    this.idleFrames = {};
+    this.walkFrames = {};
 
-    this.loadFrames("./assets/Player/idle_", 4, this.idleFrames);
-    this.loadFrames("./assets/Player/walk_", 6, this.walkFrames);
-    this.loadFrames("./assets/Player/dance_", 6, this.danceFrames);
+    this.loadIdleFrames();
+    this.loadWalkFrames();
 
-    this.currentFrames = this.idleFrames;
+    this.currentFrames = this.idleFrames.south;
     this.frameIndex = 0;
     this.frameTimer = 0;
-    this.frameDuration = 0.16;
+    this.frameDuration = 0.2;
 
     window.addEventListener("keydown", (event) => {
       const key = event.key.toLowerCase();
 
-      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "e"].includes(key)) {
+      if (
+        ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "e"]
+          .includes(key)
+      ) {
         event.preventDefault();
       }
 
@@ -40,11 +44,49 @@ export class Player {
     });
   }
 
-  loadFrames(path, total, frames) {
-    for (let i = 1; i <= total; i++) {
-      const image = new Image();
-      image.src = `${path}${String(i).padStart(2, "0")}.png`;
-      frames.push(image);
+  loadImage(path) {
+    const image = new Image();
+    image.src = path;
+    return image;
+  }
+
+  loadIdleFrames() {
+    const directions = [
+      "south",
+      "north",
+      "east",
+      "west",
+      "south-east",
+      "south-west",
+      "north-east",
+      "north-west"
+    ];
+
+    for (const direction of directions) {
+      this.idleFrames[direction] = [
+        this.loadImage(`./assets/Player/idle_${direction}.png`)
+      ];
+    }
+  }
+
+  loadWalkFrames() {
+    const animations = {
+      front: "./assets/Player/walking_front",
+      back: "./assets/Player/walking_back",
+      left: "./assets/Player/walking_left",
+      right: "./assets/Player/walking-right"
+    };
+
+    for (const [direction, path] of Object.entries(animations)) {
+      this.walkFrames[direction] = [];
+
+      for (let i = 1; i <= 8; i++) {
+        const image = this.loadImage(
+          `${path}${String(i).padStart(2, "0")}.png`
+        );
+
+        this.walkFrames[direction].push(image);
+      }
     }
   }
 
@@ -70,19 +112,61 @@ export class Player {
     this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
     this.y = Math.max(0, Math.min(canvas.height - this.height, this.y));
 
-    this.currentFrames = this.moving ? this.walkFrames : this.idleFrames;
-    this.frameDuration = this.moving ? 0.12 : 0.2;
+    if (this.moving) {
+      if (dx < 0 && dy < 0) {
+        this.direction = "north-west";
+      } else if (dx > 0 && dy < 0) {
+        this.direction = "north-east";
+      } else if (dx < 0 && dy > 0) {
+        this.direction = "south-west";
+      } else if (dx > 0 && dy > 0) {
+        this.direction = "south-east";
+      } else if (dx < 0) {
+        this.direction = "west";
+      } else if (dx > 0) {
+        this.direction = "east";
+      } else if (dy < 0) {
+        this.direction = "north";
+      } else if (dy > 0) {
+        this.direction = "south";
+      }
+    }
 
+    this.selectAnimation(dx, dy);
     this.animate(deltaTime);
   }
 
+  selectAnimation(dx, dy) {
+    let nextFrames;
+
+    if (!this.moving) {
+      nextFrames = this.idleFrames[this.direction];
+      this.frameDuration = 0.2;
+    } else if (Math.abs(dx) > Math.abs(dy)) {
+      nextFrames = dx < 0 ? this.walkFrames.left : this.walkFrames.right;
+      this.frameDuration = 0.12;
+    } else if (dy < 0) {
+      nextFrames = this.walkFrames.back;
+      this.frameDuration = 0.12;
+    } else {
+      nextFrames = this.walkFrames.front;
+      this.frameDuration = 0.12;
+    }
+
+    if (this.currentFrames !== nextFrames) {
+      this.currentFrames = nextFrames;
+      this.frameIndex = 0;
+      this.frameTimer = 0;
+    }
+  }
+
   animate(deltaTime) {
-    if (this.currentFrames.length === 0) return;
+    if (!this.currentFrames || this.currentFrames.length === 0) return;
 
     this.frameTimer += deltaTime;
 
     if (this.frameTimer >= this.frameDuration) {
-      this.frameTimer = 0;
+      this.frameTimer -= this.frameDuration;
       this.frameIndex = (this.frameIndex + 1) % this.currentFrames.length;
     }
   }
@@ -96,6 +180,12 @@ export class Player {
 
     if (!frame || !frame.complete || frame.naturalWidth === 0) return;
 
-    context.drawImage(frame, this.x, this.y, this.width, this.height);
+    context.drawImage(
+      frame,
+      this.x,
+      this.y,
+      this.width,
+      this.height
+    );
   }
 }

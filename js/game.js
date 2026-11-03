@@ -23,7 +23,7 @@ export class Game {
     this.studioLogo.src = "./assets/double-m-studio.jpeg";
 
     this.duelRoom = new Image();
-    this.duelRoom.src = "./assets/sala-duelo.png";
+    this.duelRoom.src = "./assets/sala-duelo.jpeg";
 
     this.player = new Player(390, 430);
 

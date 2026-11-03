@@ -2,12 +2,12 @@ export class Enemy {
   constructor(x, y, name = "Alien") {
     this.x = x;
     this.y = y;
-    this.width = 100;
-    this.height = 150;
+    this.width = 220;
+    this.height = 180;
     this.name = name;
 
     this.image = new Image();
-    this.image.src = "./assets/Alien/perfil_derecho.png";
+    this.image.src = "./assets/Alien/alien_idleEast.png";
   }
 
   draw(context) {
