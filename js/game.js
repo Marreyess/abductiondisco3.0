@@ -1,4 +1,3 @@
-
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 
@@ -26,11 +25,11 @@ export class Game {
     this.duelRoom.src = "./assets/sala-duelo.jpeg";
 
     this.player = new Player(390, 430);
-
     this.alien = new Enemy(260, 410, "Alien");
 
     this.lastTime = 0;
     this.state = "menu";
+    this.wasInteracting = false;
 
     this.backgroundVideo = document.createElement("video");
     this.backgroundVideo.src = "./assets/space-background.mp4";
@@ -41,7 +40,29 @@ export class Game {
     this.backgroundVideo.load();
     this.backgroundVideo.play().catch(() => {});
 
-    this.wasInteracting = false;
+    this.walkableArea = [
+      { x: 0, y: 625 },
+      { x: 370, y: 470 },
+      { x: 1070, y: 470 },
+      { x: 1280, y: 550 },
+      { x: 1280, y: 720 },
+      { x: 0, y: 720 }
+    ];
+
+    this.blockedAreas = [
+      {
+        x: 350,
+        y: 440,
+        width: 230,
+        height: 120
+      },
+      {
+        x: 1030,
+        y: 390,
+        width: 250,
+        height: 220
+      }
+    ];
 
     this.buttons = {
       play: { x: 490, y: 450, width: 300, height: 100 },
@@ -101,7 +122,11 @@ export class Game {
   }
 
   update(deltaTime) {
-    this.player.update(deltaTime, this.canvas);
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => this.isPositionAllowed(x, y)
+    );
 
     const interacting = this.player.wantsToInteract();
     const nearAlien = this.isNear(this.player, this.alien);
@@ -111,6 +136,47 @@ export class Game {
     }
 
     this.wasInteracting = interacting;
+  }
+
+  isPositionAllowed(x, y) {
+    const feet = this.player.getFootPosition(x, y);
+
+    if (!this.isPointInsidePolygon(feet, this.walkableArea)) {
+      return false;
+    }
+
+    for (const area of this.blockedAreas) {
+      if (
+        feet.x >= area.x &&
+        feet.x <= area.x + area.width &&
+        feet.y >= area.y &&
+        feet.y <= area.y + area.height
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  isPointInsidePolygon(point, polygon) {
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const a = polygon[i];
+      const b = polygon[j];
+
+      const intersects =
+        a.y > point.y !== b.y > point.y &&
+        point.x <
+          ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+
+      if (intersects) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
   }
 
   isNear(player, target) {

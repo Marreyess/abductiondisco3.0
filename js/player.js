@@ -26,8 +26,7 @@ export class Player {
       const key = event.key.toLowerCase();
 
       if (
-        ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "e"]
-          .includes(key)
+        ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "e"].includes(key)
       ) {
         event.preventDefault();
       }
@@ -81,16 +80,14 @@ export class Player {
       this.walkFrames[direction] = [];
 
       for (let i = 1; i <= 8; i++) {
-        const image = this.loadImage(
-          `${path}${String(i).padStart(2, "0")}.png`
+        this.walkFrames[direction].push(
+          this.loadImage(`${path}${String(i).padStart(2, "0")}.png`)
         );
-
-        this.walkFrames[direction].push(image);
       }
     }
   }
 
-  update(deltaTime, canvas) {
+  update(deltaTime, canvas, isPositionAllowed) {
     let dx = 0;
     let dy = 0;
 
@@ -106,11 +103,24 @@ export class Player {
       dy *= Math.SQRT1_2;
     }
 
-    this.x += dx * this.speed * deltaTime;
-    this.y += dy * this.speed * deltaTime;
+    const nextX = this.x + dx * this.speed * deltaTime;
+    const nextY = this.y + dy * this.speed * deltaTime;
 
-    this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
-    this.y = Math.max(0, Math.min(canvas.height - this.height, this.y));
+    if (dx !== 0) {
+      const boundedX = Math.max(0, Math.min(canvas.width - this.width, nextX));
+
+      if (isPositionAllowed(boundedX, this.y)) {
+        this.x = boundedX;
+      }
+    }
+
+    if (dy !== 0) {
+      const boundedY = Math.max(0, Math.min(canvas.height - this.height, nextY));
+
+      if (isPositionAllowed(this.x, boundedY)) {
+        this.y = boundedY;
+      }
+    }
 
     if (this.moving) {
       if (dx < 0 && dy < 0) {
@@ -175,17 +185,18 @@ export class Player {
     return this.keys.has("e");
   }
 
+  getFootPosition(x = this.x, y = this.y) {
+    return {
+      x: x + this.width / 2,
+      y: y + this.height * 0.9
+    };
+  }
+
   draw(context) {
     const frame = this.currentFrames[this.frameIndex];
 
     if (!frame || !frame.complete || frame.naturalWidth === 0) return;
 
-    context.drawImage(
-      frame,
-      this.x,
-      this.y,
-      this.width,
-      this.height
-    );
+    context.drawImage(frame, this.x, this.y, this.width, this.height);
   }
 }
