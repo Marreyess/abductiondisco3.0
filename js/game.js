@@ -24,12 +24,18 @@ export class Game {
     this.duelRoom = new Image();
     this.duelRoom.src = "./assets/sala-duelo.jpeg";
 
+    this.pauseImage = new Image();
+    this.pauseImage.src = "./assets/pause.png";
+
     this.player = new Player(390, 430);
     this.alien = new Enemy(260, 410, "Alien");
 
     this.lastTime = 0;
     this.state = "menu";
     this.wasInteracting = false;
+
+    this.previousState = null;
+    this.videoWasPlaying = false;
 
     this.backgroundVideo = document.createElement("video");
     this.backgroundVideo.src = "./assets/space-background.mp4";
@@ -65,10 +71,58 @@ export class Game {
     ];
 
     this.buttons = {
-      play: { x: 490, y: 450, width: 300, height: 100 },
-      credits: { x: 490, y: 560, width: 300, height: 75 },
-      back: { x: 35, y: 28, width: 115, height: 42 }
+      play: {
+        x: 490,
+        y: 450,
+        width: 300,
+        height: 100
+      },
+
+      credits: {
+        x: 490,
+        y: 560,
+        width: 300,
+        height: 75
+      },
+
+      back: {
+        x: 35,
+        y: 28,
+        width: 115,
+        height: 42
+      },
+
+      continue: {
+        x: 340,
+        y: 405,
+        width: 600,
+        height: 140
+      },
+
+      exit: {
+        x: 340,
+        y: 555,
+        width: 600,
+        height: 135
+      }
     };
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+
+        if (event.repeat) return;
+
+        if (this.state === "paused") {
+          this.resumeGame();
+        } else if (
+          this.state === "playing" ||
+          this.state === "rhythm"
+        ) {
+          this.pauseGame();
+        }
+      }
+    });
   }
 
   start() {
@@ -77,7 +131,11 @@ export class Game {
   }
 
   loop = (time) => {
-    const deltaTime = Math.min((time - this.lastTime) / 1000, 0.05);
+    const deltaTime = Math.min(
+      (time - this.lastTime) / 1000,
+      0.05
+    );
+
     this.lastTime = time;
 
     if (this.state === "playing") {
@@ -88,11 +146,64 @@ export class Game {
     requestAnimationFrame(this.loop);
   };
 
+  pauseGame() {
+    if (this.state === "paused") return;
+
+    this.previousState = this.state;
+
+    this.videoWasPlaying =
+      !this.backgroundVideo.paused;
+
+    this.backgroundVideo.pause();
+
+    this.state = "paused";
+  }
+
+  resumeGame() {
+    if (this.state !== "paused") return;
+
+    this.state = this.previousState || "playing";
+    this.previousState = null;
+
+    if (this.videoWasPlaying) {
+      this.backgroundVideo.play().catch(() => {});
+    }
+
+    this.videoWasPlaying = false;
+    this.lastTime = performance.now();
+  }
+
+  exitPause() {
+    if (this.state !== "paused") return;
+
+    this.state = "menu";
+    this.previousState = null;
+
+    this.backgroundVideo.play().catch(() => {});
+
+    this.videoWasPlaying = false;
+    this.wasInteracting = false;
+  }
+
   handleClick(x, y) {
+    if (this.state === "paused") {
+      if (this.isInside(x, y, this.buttons.continue)) {
+        this.resumeGame();
+      } else if (
+        this.isInside(x, y, this.buttons.exit)
+      ) {
+        this.exitPause();
+      }
+
+      return;
+    }
+
     if (this.state === "menu") {
       if (this.isInside(x, y, this.buttons.play)) {
         this.state = "playing";
-      } else if (this.isInside(x, y, this.buttons.credits)) {
+      } else if (
+        this.isInside(x, y, this.buttons.credits)
+      ) {
         this.state = "credits";
       }
 
@@ -103,6 +214,8 @@ export class Game {
       if (this.isInside(x, y, this.buttons.back)) {
         this.state = "menu";
       }
+
+      return;
     }
 
     if (this.state === "rhythm") {
@@ -129,9 +242,16 @@ export class Game {
     );
 
     const interacting = this.player.wantsToInteract();
-    const nearAlien = this.isNear(this.player, this.alien);
+    const nearAlien = this.isNear(
+      this.player,
+      this.alien
+    );
 
-    if (interacting && !this.wasInteracting && nearAlien) {
+    if (
+      interacting &&
+      !this.wasInteracting &&
+      nearAlien
+    ) {
       this.state = "rhythm";
     }
 
@@ -141,7 +261,12 @@ export class Game {
   isPositionAllowed(x, y) {
     const feet = this.player.getFootPosition(x, y);
 
-    if (!this.isPointInsidePolygon(feet, this.walkableArea)) {
+    if (
+      !this.isPointInsidePolygon(
+        feet,
+        this.walkableArea
+      )
+    ) {
       return false;
     }
 
@@ -162,14 +287,19 @@ export class Game {
   isPointInsidePolygon(point, polygon) {
     let inside = false;
 
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    for (
+      let i = 0, j = polygon.length - 1;
+      i < polygon.length;
+      j = i++
+    ) {
       const a = polygon[i];
       const b = polygon[j];
 
       const intersects =
         a.y > point.y !== b.y > point.y &&
         point.x <
-          ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+          ((b.x - a.x) * (point.y - a.y)) /
+          (b.y - a.y) + a.x;
 
       if (intersects) {
         inside = !inside;
@@ -180,10 +310,17 @@ export class Game {
   }
 
   isNear(player, target) {
-    const playerCenterX = player.x + player.width / 2;
-    const playerCenterY = player.y + player.height / 2;
-    const targetCenterX = target.x + target.width / 2;
-    const targetCenterY = target.y + target.height / 2;
+    const playerCenterX =
+      player.x + player.width / 2;
+
+    const playerCenterY =
+      player.y + player.height / 2;
+
+    const targetCenterX =
+      target.x + target.width / 2;
+
+    const targetCenterY =
+      target.y + target.height / 2;
 
     const dx = playerCenterX - targetCenterX;
     const dy = playerCenterY - targetCenterY;
@@ -196,7 +333,12 @@ export class Game {
     const canvas = this.canvas;
 
     context.fillStyle = "#000000";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
     if (this.backgroundVideo.readyState >= 2) {
       context.drawImage(
@@ -209,7 +351,12 @@ export class Game {
     }
 
     context.fillStyle = "rgba(5, 3, 18, 0.42)";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
   }
 
   drawDuelRoom() {
@@ -217,9 +364,17 @@ export class Game {
     const canvas = this.canvas;
 
     context.fillStyle = "#000000";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
-    if (this.duelRoom.complete && this.duelRoom.naturalWidth > 0) {
+    if (
+      this.duelRoom.complete &&
+      this.duelRoom.naturalWidth > 0
+    ) {
       context.drawImage(
         this.duelRoom,
         0,
@@ -231,7 +386,10 @@ export class Game {
   }
 
   drawContainedImage(image, area) {
-    if (!image.complete || image.naturalWidth === 0) return;
+    if (
+      !image.complete ||
+      image.naturalWidth === 0
+    ) return;
 
     const scale = Math.min(
       area.width / image.naturalWidth,
@@ -240,10 +398,20 @@ export class Game {
 
     const width = image.naturalWidth * scale;
     const height = image.naturalHeight * scale;
-    const x = area.x + (area.width - width) / 2;
-    const y = area.y + (area.height - height) / 2;
 
-    this.context.drawImage(image, x, y, width, height);
+    const x = area.x +
+      (area.width - width) / 2;
+
+    const y = area.y +
+      (area.height - height) / 2;
+
+    this.context.drawImage(
+      image,
+      x,
+      y,
+      width,
+      height
+    );
   }
 
   drawImageButton(image, button) {
@@ -255,6 +423,8 @@ export class Game {
       this.drawMenu();
     } else if (this.state === "credits") {
       this.drawCredits();
+    } else if (this.state === "paused") {
+      this.drawPause();
     } else if (this.state === "rhythm") {
       this.drawRhythm();
     } else {
@@ -262,11 +432,100 @@ export class Game {
     }
   }
 
+  drawPause() {
+    const context = this.context;
+    const canvas = this.canvas;
+
+    context.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    if (this.previousState === "rhythm") {
+      this.drawRhythm();
+    } else {
+      this.drawGame();
+    }
+
+    context.fillStyle = "rgba(0, 0, 0, 0.65)";
+    context.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    if (
+      this.pauseImage.complete &&
+      this.pauseImage.naturalWidth > 0
+    ) {
+      context.save();
+      context.imageSmoothingEnabled = false;
+
+      context.drawImage(
+        this.pauseImage,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      context.restore();
+    } else {
+      context.textAlign = "center";
+
+      context.fillStyle = "#a6ff00";
+      context.font = "bold 80px Arial";
+      context.fillText("PAUSA", 640, 300);
+
+      context.fillStyle = "#3de6ed";
+      context.fillRect(
+        340,
+        405,
+        600,
+        140
+      );
+
+      context.fillStyle = "#8d00ed";
+      context.font = "bold 44px Arial";
+      context.fillText(
+        "CONTINUAR",
+        640,
+        490
+      );
+
+      context.fillStyle = "#8d00ed";
+      context.fillRect(
+        340,
+        555,
+        600,
+        135
+      );
+
+      context.fillStyle = "#3de6ed";
+      context.fillText(
+        "SALIR",
+        640,
+        640
+      );
+
+      context.textAlign = "start";
+    }
+  }
+
   drawMenu() {
     const context = this.context;
     const canvas = this.canvas;
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
     this.drawBackground();
 
     this.drawContainedImage(this.logo, {
@@ -276,21 +535,39 @@ export class Game {
       height: 390
     });
 
-    this.drawImageButton(this.playImage, this.buttons.play);
-    this.drawImageButton(this.creditsImage, this.buttons.credits);
+    this.drawImageButton(
+      this.playImage,
+      this.buttons.play
+    );
+
+    this.drawImageButton(
+      this.creditsImage,
+      this.buttons.credits
+    );
   }
 
   drawCredits() {
     const context = this.context;
     const canvas = this.canvas;
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
     this.drawBackground();
 
     context.textAlign = "center";
     context.fillStyle = "#a6ff00";
     context.font = "bold 48px Arial";
-    context.fillText("CREDITS", canvas.width / 2, 75);
+
+    context.fillText(
+      "CREDITS",
+      canvas.width / 2,
+      75
+    );
 
     this.drawContainedImage(this.studioLogo, {
       x: canvas.width / 2 - 150,
@@ -301,24 +578,54 @@ export class Game {
 
     context.fillStyle = "#ffffff";
     context.font = "bold 27px Arial";
-    context.fillText("DOUBLE M STUDIO", canvas.width / 2, 385);
+
+    context.fillText(
+      "DOUBLE M STUDIO",
+      canvas.width / 2,
+      385
+    );
 
     context.fillStyle = "#a6ff00";
     context.font = "bold 20px Arial";
-    context.fillText("DESARROLLO DEL VIDEOJUEGO", canvas.width / 2, 425);
+
+    context.fillText(
+      "DESARROLLO DEL VIDEOJUEGO",
+      canvas.width / 2,
+      425
+    );
 
     context.fillStyle = "#c8c4d8";
     context.font = "20px Arial";
-    context.fillText("Desarrollado por", canvas.width / 2, 465);
+
+    context.fillText(
+      "Desarrollado por",
+      canvas.width / 2,
+      465
+    );
 
     context.fillStyle = "#ffffff";
     context.font = "bold 22px Arial";
-    context.fillText("Mariana A. Reyes", canvas.width / 2, 505);
-    context.fillText("Oscar Michel Ortega Martinez", canvas.width / 2, 540);
+
+    context.fillText(
+      "Mariana A. Reyes",
+      canvas.width / 2,
+      505
+    );
+
+    context.fillText(
+      "Oscar Michel Ortega Martinez",
+      canvas.width / 2,
+      540
+    );
 
     context.fillStyle = "#a6ff00";
     context.font = "18px Arial";
-    context.fillText("ABDUCCIÓN DISCO", canvas.width / 2, 585);
+
+    context.fillText(
+      "ABDUCCIÓN DISCO",
+      canvas.width / 2,
+      585
+    );
 
     this.drawBackButton();
     context.textAlign = "start";
@@ -331,14 +638,25 @@ export class Game {
     context.fillStyle = "#ffffff";
     context.font = "20px Arial";
     context.textAlign = "left";
-    context.fillText("← BACK", button.x, button.y + 27);
+
+    context.fillText(
+      "← BACK",
+      button.x,
+      button.y + 27
+    );
   }
 
   drawGame() {
     const context = this.context;
     const canvas = this.canvas;
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
     this.drawDuelRoom();
 
     this.alien.draw(context);
@@ -348,11 +666,13 @@ export class Game {
       context.fillStyle = "#ffffff";
       context.font = "20px Arial";
       context.textAlign = "center";
+
       context.fillText(
         "Presiona E para iniciar el duelo",
         canvas.width / 2,
         canvas.height - 45
       );
+
       context.textAlign = "start";
     }
   }
@@ -361,17 +681,34 @@ export class Game {
     const context = this.context;
     const canvas = this.canvas;
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
     context.fillStyle = "#101225";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
     context.fillStyle = "#a6ff00";
     context.font = "bold 48px Arial";
     context.textAlign = "center";
-    context.fillText("JUEGO DE RITMO", canvas.width / 2, canvas.height / 2);
+
+    context.fillText(
+      "JUEGO DE RITMO",
+      canvas.width / 2,
+      canvas.height / 2
+    );
 
     context.fillStyle = "#ffffff";
     context.font = "24px Arial";
+
     context.fillText(
       "Aquí comenzará el duelo musical",
       canvas.width / 2,
