@@ -1,3 +1,4 @@
+
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 
@@ -26,6 +27,9 @@ export class Game {
 
     this.pauseImage = new Image();
     this.pauseImage.src = "./assets/pause.png";
+
+    this.crossoutImage = new Image();
+    this.crossoutImage.src = "./assets/Notas/crossout01.png";
 
     this.player = new Player(390, 430);
     this.alien = new Enemy(260, 410, "Alien");
@@ -92,6 +96,13 @@ export class Game {
         height: 42
       },
 
+      begin: {
+        x: 475,
+        y: 615,
+        width: 330,
+        height: 65
+      },
+
       continue: {
         x: 340,
         y: 405,
@@ -117,6 +128,7 @@ export class Game {
           this.resumeGame();
         } else if (
           this.state === "playing" ||
+          this.state === "rhythmIntro" ||
           this.state === "rhythm"
         ) {
           this.pauseGame();
@@ -218,6 +230,16 @@ export class Game {
       return;
     }
 
+    if (this.state === "rhythmIntro") {
+      if (this.isInside(x, y, this.buttons.back)) {
+        this.state = "playing";
+      } else if (this.isInside(x, y, this.buttons.begin)) {
+        this.state = "rhythm";
+      }
+
+      return;
+    }
+
     if (this.state === "rhythm") {
       if (this.isInside(x, y, this.buttons.back)) {
         this.state = "playing";
@@ -252,7 +274,7 @@ export class Game {
       !this.wasInteracting &&
       nearAlien
     ) {
-      this.state = "rhythm";
+      this.state = "rhythmIntro";
     }
 
     this.wasInteracting = interacting;
@@ -425,6 +447,8 @@ export class Game {
       this.drawCredits();
     } else if (this.state === "paused") {
       this.drawPause();
+    } else if (this.state === "rhythmIntro") {
+      this.drawRhythmIntro();
     } else if (this.state === "rhythm") {
       this.drawRhythm();
     } else {
@@ -445,6 +469,8 @@ export class Game {
 
     if (this.previousState === "rhythm") {
       this.drawRhythm();
+    } else if (this.previousState === "rhythmIntro") {
+      this.drawRhythmIntro();
     } else {
       this.drawGame();
     }
@@ -675,6 +701,146 @@ export class Game {
 
       context.textAlign = "start";
     }
+  }
+
+  drawRhythmIntro() {
+    const context = this.context;
+
+    this.drawDuelRoom();
+
+    context.fillStyle = "rgba(5, 3, 22, 0.94)";
+    context.fillRect(0, 0, 1280, 720);
+
+    context.fillStyle = "#15112e";
+    context.fillRect(340, 65, 600, 625);
+
+    context.strokeStyle = "#8e45dc";
+    context.lineWidth = 4;
+    context.strokeRect(340, 65, 600, 625);
+
+    context.textAlign = "center";
+    context.fillStyle = "#a6ff00";
+    context.font = "bold 32px Arial";
+    context.fillText("TUTORIAL DE RITMO", 640, 115);
+
+    context.fillStyle = "#ffffff";
+    context.font = "19px Arial";
+    context.fillText("Conoce las notas antes del duelo", 640, 150);
+
+    context.save();
+    context.shadowColor = "#b970ff";
+    context.shadowBlur = 18;
+    context.fillStyle = "#b970ff";
+    context.beginPath();
+    context.arc(410, 215, 24, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+
+    context.fillStyle = "#ffffff";
+    context.font = "bold 20px Arial";
+    context.textAlign = "left";
+    context.fillText("CÍRCULO", 460, 209);
+
+    context.font = "17px Arial";
+    context.fillText("Un clic cuando toque la línea", 460, 235);
+
+    context.save();
+    context.shadowColor = "#ff2bd6";
+    context.shadowBlur = 18;
+    context.strokeStyle = "#ff2bd6";
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(410, 320, 25, 0, Math.PI * 2);
+    context.stroke();
+
+    context.beginPath();
+    context.arc(410, 320, 14, 0, Math.PI * 2);
+    context.stroke();
+    context.restore();
+
+    context.fillStyle = "#ffffff";
+    context.font = "bold 20px Arial";
+    context.fillText("CÍRCULO DOBLE", 460, 315);
+
+    context.font = "17px Arial";
+    context.fillText("Dos clics rápidos en la línea", 460, 341);
+
+    this.drawTutorialStar(410, 420, 27);
+
+    context.fillStyle = "#ffffff";
+    context.font = "bold 20px Arial";
+    context.fillText("ESTRELLA ESPECIAL", 460, 415);
+
+    context.font = "17px Arial";
+    context.fillText("Ralentiza la música al acertar", 460, 441);
+
+    if (
+      this.crossoutImage.complete &&
+      this.crossoutImage.naturalWidth > 0
+    ) {
+      context.drawImage(
+        this.crossoutImage,
+        375,
+        475,
+        70,
+        70
+      );
+    }
+
+    context.fillStyle = "#ffffff";
+    context.font = "bold 20px Arial";
+    context.textAlign = "left";
+    context.fillText("TACHE / EQUIS", 460, 505);
+
+    context.font = "17px Arial";
+    context.fillText("No lo presiones: es una trampa", 460, 525);
+
+    context.textAlign = "center";
+    context.fillStyle = "#ffdc69";
+    context.font = "16px Arial";
+    context.fillText("3 errores seguidos = derrota", 640, 565);
+
+    const button = this.buttons.begin;
+
+    context.fillStyle = "#a6ff00";
+    context.fillRect(button.x, button.y, button.width, button.height);
+
+    context.fillStyle = "#101225";
+    context.font = "bold 25px Arial";
+    context.fillText("INICIAR DUELO", 640, 656);
+
+    this.drawBackButton();
+    context.textAlign = "start";
+  }
+
+  drawTutorialStar(centerX, centerY, radius) {
+    const context = this.context;
+    const spikes = 5;
+    const innerRadius = radius * 0.45;
+    let rotation = Math.PI / 2 * 3;
+    const step = Math.PI / spikes;
+
+    context.beginPath();
+    context.moveTo(centerX, centerY - radius);
+
+    for (let i = 0; i < spikes; i++) {
+      context.lineTo(
+        centerX + Math.cos(rotation) * radius,
+        centerY + Math.sin(rotation) * radius
+      );
+      rotation += step;
+
+      context.lineTo(
+        centerX + Math.cos(rotation) * innerRadius,
+        centerY + Math.sin(rotation) * innerRadius
+      );
+      rotation += step;
+    }
+
+    context.lineTo(centerX, centerY - radius);
+    context.closePath();
+    context.fillStyle = "#ffdc69";
+    context.fill();
   }
 
   drawRhythm() {
