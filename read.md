@@ -1,4 +1,4 @@
-# Disco Abduction
+# Abduccción Disco
 
 Videojuego web desarrollado por Double M Studio para la materia Programación en Lenguajes Interpretados.
 
@@ -24,4 +24,4 @@ Abrir el proyecto con un servidor local, como Live Server en Visual Studio Code.
 
 ## Estado del proyecto
 
-En desarrollo.
+En desarrollo.  
