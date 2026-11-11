@@ -9,7 +9,7 @@ export class Game {
     this.canvas.width = 1280;
     this.canvas.height = 720;
 
-    this.logo = this.loadImage("./assets/logo-abduccion.png");
+    this.logo = this.loadImage("./assets/Logo-AbduccionDisco.png");
     this.playImage = this.loadImage("./assets/play.png");
     this.creditsImage = this.loadImage("./assets/credits.png");
     this.studioLogo = this.loadImage("./assets/double-m-studio.jpeg");
@@ -1168,7 +1168,7 @@ export class Game {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 21px Arial";
+    ctx.font = "bold 21px 'Silkscreen'";
 
     ctx.fillText(
       `${this.comicIndex + 1} / ${this.comicTotal}`,
@@ -1177,7 +1177,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px Arial";
+    ctx.font = "19px 'Silkscreen'";
 
     ctx.fillText(
       this.comicIndex === this.comicTotal - 1
@@ -1228,14 +1228,14 @@ export class Game {
       ctx.textAlign = "center";
 
       ctx.fillStyle = "#a6ff00";
-      ctx.font = "bold 78px Arial";
+      ctx.font = "bold 78px 'Silkscreen'";
       ctx.fillText("PAUSA", 640, 315);
 
       ctx.fillStyle = "#32e6ff";
       ctx.fillRect(475, 443, 307, 67);
 
       ctx.fillStyle = "#8000c8";
-      ctx.font = "bold 30px Arial";
+      ctx.font = "bold 30px 'Silkscreen'";
       ctx.fillText("CONTINUAR", 640, 488);
 
       ctx.fillStyle = "#8000c8";
@@ -1277,7 +1277,7 @@ export class Game {
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 48px Arial";
+    ctx.font = "bold 48px 'Silkscreen'";
     ctx.fillText("CREDITS", 640, 75);
 
     this.drawContainedImage(this.studioLogo, {
@@ -1288,51 +1288,34 @@ export class Game {
     });
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 27px Arial";
+    ctx.font = "bold 30px 'Silkscreen'";
     ctx.fillText(
       "DOUBLE M STUDIO",
       640,
       385
     );
 
-    ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 20px Arial";
+    ctx.fillStyle = "#c8c4d8";
+    ctx.font = "25px 'Silkscreen'";
     ctx.fillText(
-      "DESARROLLO DEL VIDEOJUEGO",
+      "Desarrollado por",
       640,
       425
     );
 
-    ctx.fillStyle = "#c8c4d8";
-    ctx.font = "20px Arial";
-    ctx.fillText(
-      "Desarrollado por",
-      640,
-      465
-    );
-
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 22px Arial";
+    ctx.font = "bold 20px 'Silkscreen'";
 
     ctx.fillText(
       "Mariana A. Reyes",
       640,
-      505
+      460
     );
 
     ctx.fillText(
       "Oscar Michel Ortega Martinez",
       640,
-      540
-    );
-
-    ctx.fillStyle = "#a6ff00";
-    ctx.font = "18px Arial";
-
-    ctx.fillText(
-      "ABDUCCIÓN DISCO",
-      640,
-      585
+      500
     );
 
     this.drawBackButton();
@@ -1343,7 +1326,7 @@ export class Game {
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
-    ctx.font = "20px Arial";
+    ctx.font = "20px 'Silkscreen'";
 
     ctx.fillText(
       "← BACK",
@@ -1363,7 +1346,7 @@ export class Game {
     if (this.isNear(this.player, this.alien)) {
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "20px Arial";
+      ctx.font = "20px 'Silkscreen'";
 
       ctx.fillText(
         "Presiona E para iniciar el duelo",
@@ -1395,7 +1378,7 @@ export class Game {
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 32px Arial";
+    ctx.font = "bold 32px 'Silkscreen'";
 
     ctx.fillText(
       "TUTORIAL DE RITMO",
@@ -1404,7 +1387,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px Arial";
+    ctx.font = "19px 'Silkscreen'";
 
     ctx.fillText(
       "Conoce las notas antes del duelo",
@@ -1450,7 +1433,7 @@ export class Game {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px Arial";
+      ctx.font = "bold 20px 'Silkscreen'";
 
       ctx.fillText(
         item.title,
@@ -1458,7 +1441,7 @@ export class Game {
         item.y - 6
       );
 
-      ctx.font = "17px Arial";
+      ctx.font = "17px 'Silkscreen'";
 
       ctx.fillText(
         item.description,
@@ -1469,7 +1452,7 @@ export class Game {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffdc69";
-    ctx.font = "16px Arial";
+    ctx.font = "16px 'Silkscreen'";
 
     ctx.fillText(
       "3 errores seguidos = derrota",
@@ -1489,7 +1472,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#101225";
-    ctx.font = "bold 25px Arial";
+    ctx.font = "bold 25px 'Silkscreen'";
 
     ctx.fillText(
       "INICIAR DUELO",
@@ -1513,7 +1496,7 @@ export class Game {
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 33px Arial";
+    ctx.font = "bold 33px 'Silkscreen'";
 
     ctx.fillText(
       "TUTORIAL DE RITMO",
@@ -1522,7 +1505,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 23px Arial";
+    ctx.font = "bold 23px 'Silkscreen'";
 
     ctx.fillText(
       `PUNTOS ${this.score}`,
@@ -1539,7 +1522,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px Arial";
+    ctx.font = "19px 'Silkscreen'";
 
     ctx.fillText(
       `ACIERTOS ${this.hits}`,
@@ -1696,7 +1679,7 @@ export class Game {
     }
 
     ctx.fillStyle = "#b8edff";
-    ctx.font = "17px Arial";
+    ctx.font = "17px 'Silkscreen'";
 
     ctx.fillText(
       "HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA",
@@ -1706,7 +1689,7 @@ export class Game {
 
     if (this.feedbackTimer > 0) {
       ctx.fillStyle = this.feedbackColor;
-      ctx.font = "bold 22px Arial";
+      ctx.font = "bold 22px 'Silkscreen'";
 
       ctx.fillText(
         this.feedback,
@@ -1717,7 +1700,7 @@ export class Game {
 
     if (this.music.playbackRate !== 1) {
       ctx.fillStyle = "#ffdc69";
-      ctx.font = "18px Arial";
+      ctx.font = "18px 'Silkscreen'";
 
       ctx.fillText(
         `VELOCIDAD x${this.music.playbackRate.toFixed(2)}`,
@@ -1747,18 +1730,18 @@ export class Game {
       ? "#a6ff00"
       : "#ff576d";
 
-    ctx.font = "bold 44px Arial";
+    ctx.font = "bold 44px 'Silkscreen'";
 
     ctx.fillText(
       victoria
-        ? "¡TUTORIAL COMPLETADO!"
+        ? "¡SALA DESBLOQUEADA!"
         : "¡HAS PERDIDO!",
       640,
       220
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 34px Arial";
+    ctx.font = "bold 34px 'Silkscreen'";
 
     ctx.fillText(
       `PUNTUACIÓN ${this.score}`,
@@ -1766,7 +1749,7 @@ export class Game {
       305
     );
 
-    ctx.font = "23px Arial";
+    ctx.font = "23px 'Silkscreen'";
 
     ctx.fillText(
       `Aciertos: ${this.hits}`,
@@ -1798,7 +1781,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#101225";
-    ctx.font = "bold 25px Arial";
+    ctx.font = "bold 25px 'Silkscreen'";
 
     ctx.fillText(
       "VOLVER A JUGAR",
