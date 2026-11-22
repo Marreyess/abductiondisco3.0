@@ -9,7 +9,7 @@ export class Game {
     this.canvas.width = 1280;
     this.canvas.height = 720;
 
-    this.logo = this.loadImage("./assets/Logo-AbduccionDisco.png");
+    this.logo = this.loadImage("./assets/logo-AbduccionDisco.png");
     this.playImage = this.loadImage("./assets/play.png");
     this.creditsImage = this.loadImage("./assets/credits.png");
     this.studioLogo = this.loadImage("./assets/double-m-studio.jpeg");
@@ -17,16 +17,13 @@ export class Game {
     this.pauseImage = this.loadImage("./assets/pause.png");
     this.comicImage = this.loadImage("./assets/Comic_Inicio.png");
 
-    this.comicIndex = 0;
-    this.comicTotal = 4;
-
     this.normalSprite = this.loadImage("./assets/Notas/normal02.png");
     this.doubleSprite = this.loadImage("./assets/Notas/dobleClic02.png");
     this.starSprite = this.loadImage("./assets/Notas/star01.png");
     this.crossoutSprite = this.loadImage("./assets/Notas/crossout01.png");
 
     this.player = new Player(390, 430);
-    this.alien = new Enemy(260, 410, "Alien");
+    this.alien = new Enemy(260, 410, "Freddie");
 
     this.state = "menu";
     this.previousState = null;
@@ -36,6 +33,151 @@ export class Game {
 
     this.videoWasPlaying = false;
     this.musicWasPlaying = false;
+    this.musicAttempt = 0;
+
+    this.comicIndex = 0;
+    this.comicTotal = 4;
+
+    this.dialogueIndex = 0;
+
+    this.dialogues = [
+      {
+        speaker: "FREDDIE",
+        text: "¡BLORP ZHAAA KIRIKÍÍÍ! ¡WOMBA WOMBA ZÉÉÉ!"
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿...Qué?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "¡KRAAA ZUMBA BLIP!"
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "No entendí absolutamente nada."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "¡Por todas las estrellas! Perdón, humano, olvidé que no hablas nuestro idioma. Qué falta de consideración la mía."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Permíteme empezar de nuevo, querido. Mi nombre es Freddielux Mercury-9000, aunque puedes llamarme Freddie."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Soy una estrella intergaláctica, un artista de renombre y, modestia aparte, una auténtica leyenda."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿Una estrella... qué?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Una estrella, cariño. No todos podemos ser el centro del universo, pero algunos nacimos con ese talento."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "Espera, espera... ¿Dónde estoy? ¿Y por qué estoy aquí? ¡¿Qué me hicieron?!"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Ay, querido, tantas preguntas y ni siquiera hemos llegado al estribillo."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¡¿ESTRIBILLO?! ¡ME SECUESTRARON!"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Técnicamente, te hemos realizado una invitación interplanetaria no solicitada."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¡ESO ES SECUESTRO!"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Qué poca elegancia tienes para describir una experiencia tan exclusiva."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "Bueno, ¿qué quieren de mí?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "¡Ah! Finalmente llegamos a la pregunta importante."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Necesitamos algo que tu especie tiene y que nosotros llevamos siglos intentando comprender..."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿Qué cosa?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "¡EL RITMO, QUERIDO!"
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "...¿Me abdujeron por bailar?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "No exactamente. Aunque, después de ver cómo te mueves, tenemos mucho trabajo por delante."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "No pienso participar en nada. Quiero regresar a mi casa."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Oh, cariño, todos queremos algo. Yo, por ejemplo, quiero un refrigerador."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿Un qué?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Un refrigerador. ¡Un buen refrigerador! ¿Tienes idea de lo complicado que es conservar las bebidas a temperatura ambiente en el espacio?"
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿Me estás hablando en serio?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Por supuesto. Soy un hombre de gustos refinados."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Pero volviendo a lo importante... Tu misión será demostrar que los humanos todavía tienen lo necesario para dominar la pista de baile."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿Y si no quiero?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "Entonces tendremos una pequeña tragedia intergaláctica."
+      },
+      {
+        speaker: "PROTAGONISTA",
+        text: "¿Me van a dejar aquí para siempre?"
+      },
+      {
+        speaker: "FREDDIE",
+        text: "No seas dramático, querido. Para eso ya estoy yo."
+      },
+      {
+        speaker: "FREDDIE",
+        text: "¡Que comience el espectáculo!"
+      }
+    ];
 
     this.backgroundVideo = document.createElement("video");
     this.backgroundVideo.src = "./assets/space-background.mp4";
@@ -112,7 +254,6 @@ export class Game {
 
     this.musicError = false;
     this.audioStarted = false;
-    this.musicAttempt = 0;
 
     this.music.addEventListener("error", () => {
       this.musicError = true;
@@ -129,7 +270,7 @@ export class Game {
     this.hitY = 565;
 
     this.noteSpeed = 240;
-    this.hitWindow = 0.20;
+    this.hitWindow = 0.2;
     this.perfectWindow = 0.075;
 
     this.notePositions = [440, 560, 680, 800];
@@ -171,6 +312,7 @@ export class Game {
         } else if (
           this.state === "playing" ||
           this.state === "comic" ||
+          this.state === "dialogue" ||
           this.state === "rhythmIntro" ||
           this.state === "rhythm" ||
           this.state === "rhythmEnd"
@@ -182,11 +324,27 @@ export class Game {
       }
 
       if (
+        this.state === "dialogue" &&
+        (event.key === "Enter" || event.code === "Space")
+      ) {
+        event.preventDefault();
+
+        if (!event.repeat) {
+          this.nextDialogue();
+        }
+
+        return;
+      }
+
+      if (
         this.state === "rhythmIntro" &&
         (event.key === "Enter" || event.code === "Space")
       ) {
         event.preventDefault();
-        this.beginRhythm();
+
+        if (!event.repeat) {
+          this.beginRhythm();
+        }
       }
     });
   }
@@ -202,30 +360,29 @@ export class Game {
 
     this.started = true;
     this.lastTime = performance.now();
-
     requestAnimationFrame(this.loop);
   }
 
   loop = time => {
-    const deltaTime = Math.min(
-      Math.max((time - this.lastTime) / 1000, 0),
-      0.05
-    );
+  const deltaTime = Math.min(
+    Math.max((time - this.lastTime) / 1000, 0),
+    0.05
+  );
 
-    this.lastTime = time;
+  this.lastTime = time;
 
-    if (this.state === "playing") {
-      this.update(deltaTime);
-    }
+  if (this.state === "playing") {
+    this.update(deltaTime);
+  }
 
-    if (this.state === "rhythm") {
-      this.updateRhythm(deltaTime);
-    }
+  if (this.state === "rhythm") {
+    this.alien.update(deltaTime);
+    this.updateRhythm(deltaTime);
+  }
 
-    this.draw();
-
-    requestAnimationFrame(this.loop);
-  };
+  this.draw();
+  requestAnimationFrame(this.loop);
+};
 
   isInside(x, y, button) {
     return (
@@ -238,13 +395,9 @@ export class Game {
 
   handleClick(x, y, detail = 1) {
     if (this.state === "paused") {
-      if (
-        this.isInside(x, y, this.buttons.pauseContinue)
-      ) {
+      if (this.isInside(x, y, this.buttons.pauseContinue)) {
         this.resumeGame();
-      } else if (
-        this.isInside(x, y, this.buttons.pauseExit)
-      ) {
+      } else if (this.isInside(x, y, this.buttons.pauseExit)) {
         this.exitPause();
       }
 
@@ -255,9 +408,7 @@ export class Game {
       if (this.isInside(x, y, this.buttons.play)) {
         this.comicIndex = 0;
         this.state = "comic";
-      } else if (
-        this.isInside(x, y, this.buttons.credits)
-      ) {
+      } else if (this.isInside(x, y, this.buttons.credits)) {
         this.state = "credits";
       }
 
@@ -276,6 +427,11 @@ export class Game {
       return;
     }
 
+    if (this.state === "dialogue") {
+      this.nextDialogue();
+      return;
+    }
+
     if (this.state === "credits") {
       if (this.isInside(x, y, this.buttons.back)) {
         this.state = "menu";
@@ -287,9 +443,7 @@ export class Game {
     if (this.state === "rhythmIntro") {
       if (this.isInside(x, y, this.buttons.back)) {
         this.exitRhythm();
-      } else if (
-        this.isInside(x, y, this.buttons.begin)
-      ) {
+      } else if (this.isInside(x, y, this.buttons.begin)) {
         this.beginRhythm();
       }
 
@@ -299,9 +453,7 @@ export class Game {
     if (this.state === "rhythmEnd") {
       if (this.isInside(x, y, this.buttons.back)) {
         this.exitRhythm();
-      } else if (
-        this.isInside(x, y, this.buttons.restart)
-      ) {
+      } else if (this.isInside(x, y, this.buttons.restart)) {
         this.startRhythm();
       }
 
@@ -318,38 +470,39 @@ export class Game {
   }
 
   update(deltaTime) {
-    this.player.update(
-      deltaTime,
-      this.canvas,
-      (x, y) => this.isPositionAllowed(x, y)
-    );
+    this.player.update(deltaTime, this.canvas, (x, y) => this.isPositionAllowed(x, y));
 
     const interacting = this.player.wantsToInteract();
-    const nearAlien = this.isNear(
-      this.player,
-      this.alien
-    );
+    const nearAlien = this.isNear(this.player, this.alien);
 
-    if (
-      interacting &&
-      !this.wasInteracting &&
-      nearAlien
-    ) {
-      this.startRhythm();
+    if (interacting && !this.wasInteracting && nearAlien) {
+      this.startDialogue();
     }
 
     this.wasInteracting = interacting;
   }
 
+  startDialogue() {
+    this.dialogueIndex = 0;
+    this.state = "dialogue";
+    this.wasInteracting = true;
+  }
+
+  nextDialogue() {
+    if (this.state !== "dialogue") return;
+
+    this.dialogueIndex++;
+
+    if (this.dialogueIndex >= this.dialogues.length) {
+      this.dialogueIndex = 0;
+      this.startRhythm();
+    }
+  }
+
   isPositionAllowed(x, y) {
     const feet = this.player.getFootPosition(x, y);
 
-    if (
-      !this.isPointInsidePolygon(
-        feet,
-        this.walkableArea
-      )
-    ) {
+    if (!this.isPointInsidePolygon(feet, this.walkableArea)) {
       return false;
     }
 
@@ -370,23 +523,15 @@ export class Game {
   isPointInsidePolygon(point, polygon) {
     let inside = false;
 
-    for (
-      let i = 0, j = polygon.length - 1;
-      i < polygon.length;
-      j = i++
-    ) {
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
       const a = polygon[i];
       const b = polygon[j];
 
       const intersects =
         (a.y > point.y) !== (b.y > point.y) &&
-        point.x <
-          ((b.x - a.x) * (point.y - a.y)) /
-          (b.y - a.y) + a.x;
+        point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
 
-      if (intersects) {
-        inside = !inside;
-      }
+      if (intersects) inside = !inside;
     }
 
     return inside;
@@ -395,7 +540,6 @@ export class Game {
   isNear(player, target) {
     const px = player.x + player.width / 2;
     const py = player.y + player.height / 2;
-
     const tx = target.x + target.width / 2;
     const ty = target.y + target.height / 2;
 
@@ -406,7 +550,6 @@ export class Game {
     if (this.state === "paused") return;
 
     this.previousState = this.state;
-
     this.videoWasPlaying = !this.backgroundVideo.paused;
     this.musicWasPlaying = !this.music.paused;
 
@@ -426,10 +569,7 @@ export class Game {
       this.backgroundVideo.play().catch(() => {});
     }
 
-    if (
-      this.musicWasPlaying &&
-      this.state === "rhythm"
-    ) {
+    if (this.musicWasPlaying && this.state === "rhythm") {
       this.music.play().catch(error => {
         console.warn(error);
         this.musicError = true;
@@ -447,7 +587,6 @@ export class Game {
     if (this.state !== "paused") return;
 
     this.musicAttempt++;
-
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -461,6 +600,7 @@ export class Game {
     this.videoWasPlaying = false;
     this.musicWasPlaying = false;
     this.speedEffectUntil = 0;
+    this.dialogueIndex = 0;
 
     this.backgroundVideo.play().catch(() => {});
 
@@ -472,7 +612,7 @@ export class Game {
     const number = Math.random();
 
     if (number < 0.58) return "circle";
-    if (number < 0.80) return "double";
+    if (number < 0.8) return "double";
 
     return "crossout";
   }
@@ -484,60 +624,29 @@ export class Game {
     let interval = 0.85;
     let first = 3;
 
-    if (
-      Number.isFinite(duration) &&
-      duration > 0
-    ) {
-      first = Math.min(
-        3,
-        Math.max(0.5, duration * 0.15)
-      );
+    if (Number.isFinite(duration) && duration > 0) {
+      first = Math.min(3, Math.max(0.5, duration * 0.15));
 
-      interval = Math.min(
-        1.1,
-        Math.max(
-          0.38,
-          (duration - first - 0.8) / 25
-        )
-      );
+      interval = Math.min(1.1, Math.max(0.38, (duration - first - 0.8) / 25));
 
-      total = Math.max(
-        1,
-        Math.min(
-          24,
-          Math.floor(
-            (duration - first - 0.4) / interval
-          )
-        )
-      );
+      total = Math.max(1, Math.min(24, Math.floor((duration - first - 0.4) / interval)));
     }
 
-    const starIndex = total >= 8
-      ? Math.floor(
-          total * (0.35 + Math.random() * 0.3)
-        )
-      : -1;
+    const starIndex = total >= 8 ? Math.floor(total * (0.35 + Math.random() * 0.3)) : -1;
 
     this.notes = [];
-
     let previousLane = -1;
 
     for (let i = 0; i < total; i++) {
-      let lane = Math.floor(
-        Math.random() * this.notePositions.length
-      );
+      let lane = Math.floor(Math.random() * this.notePositions.length);
 
       if (lane === previousLane) {
-        lane = (
-          lane + 1 + Math.floor(Math.random() * 3)
-        ) % this.notePositions.length;
+        lane = (lane + 1 + Math.floor(Math.random() * 3)) % this.notePositions.length;
       }
 
       previousLane = lane;
 
-      const type = i === starIndex
-        ? "star"
-        : this.randomType();
+      const type = i === starIndex ? "star" : this.randomType();
 
       this.notes.push({
         id: i,
@@ -552,7 +661,6 @@ export class Game {
 
   startRhythm() {
     this.musicAttempt++;
-
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -603,7 +711,8 @@ export class Game {
     this.audioStarted = false;
 
     this.buildChart();
-    this.state = "rhythm";
+this.state = "rhythm";
+this.alien.startDance();
 
     this.music.play().then(() => {
       if (attemptId !== this.musicAttempt) return;
@@ -621,21 +730,13 @@ export class Game {
 
       if (this.state === "rhythm") {
         this.musicError = true;
-
-        this.showFeedback(
-          "MODO PRÁCTICA SIN AUDIO",
-          "#ffdc69"
-        );
+        this.showFeedback("MODO PRÁCTICA SIN AUDIO", "#ffdc69");
       }
     });
   }
 
   getRhythmTime(deltaTime) {
-    if (
-      !this.musicError &&
-      !this.music.paused &&
-      this.music.readyState >= 2
-    ) {
+    if (!this.musicError && !this.music.paused && this.music.readyState >= 2) {
       this.audioStarted = true;
       return this.music.currentTime;
     }
@@ -655,23 +756,15 @@ export class Game {
   updateRhythm(deltaTime) {
     this.rhythmTime = this.getRhythmTime(deltaTime);
 
-    this.feedbackTimer = Math.max(
-      0,
-      this.feedbackTimer - deltaTime
-    );
+    this.feedbackTimer = Math.max(0, this.feedbackTimer - deltaTime);
 
     for (const effect of this.effects) {
       effect.life -= deltaTime;
     }
 
-    this.effects = this.effects.filter(
-      effect => effect.life > 0
-    );
+    this.effects = this.effects.filter(effect => effect.life > 0);
 
-    if (
-      this.speedEffectUntil > 0 &&
-      this.rhythmTime >= this.speedEffectUntil
-    ) {
+    if (this.speedEffectUntil > 0 && this.rhythmTime >= this.speedEffectUntil) {
       this.music.playbackRate = 1;
       this.speedEffectUntil = 0;
     }
@@ -679,10 +772,7 @@ export class Game {
     for (const note of this.notes) {
       if (note.status !== "pending") continue;
 
-      if (
-        this.rhythmTime >
-        note.time + this.hitWindow
-      ) {
+      if (this.rhythmTime > note.time + this.hitWindow) {
         if (note.type === "crossout") {
           note.status = "avoided";
           this.avoidedTraps++;
@@ -701,9 +791,7 @@ export class Game {
   }
 
   getNoteY(note) {
-    return this.hitY -
-      (note.time - this.rhythmTime) *
-      this.noteSpeed;
+    return this.hitY - (note.time - this.rhythmTime) * this.noteSpeed;
   }
 
   getHittableNote(x) {
@@ -713,21 +801,11 @@ export class Game {
     for (const note of this.notes) {
       if (note.status !== "pending") continue;
 
-      const difference = Math.abs(
-        this.rhythmTime - note.time
-      );
+      const difference = Math.abs(this.rhythmTime - note.time);
+      const distanceX = Math.abs(x - note.x);
 
-      const distanceX = Math.abs(
-        x - note.x
-      );
-
-      if (
-        difference <= this.hitWindow &&
-        distanceX <= 55
-      ) {
-        const distance =
-          difference * this.noteSpeed +
-          distanceX * 0.15;
+      if (difference <= this.hitWindow && distanceX <= 55) {
+        const distance = difference * this.noteSpeed + distanceX * 0.15;
 
         if (distance < bestDistance) {
           candidate = note;
@@ -745,10 +823,7 @@ export class Game {
     const note = this.getHittableNote(x);
 
     if (!note) {
-      this.showFeedback(
-        "FUERA DE TIEMPO",
-        "#ff647a"
-      );
+      this.showFeedback("FUERA DE TIEMPO", "#ff647a");
       return;
     }
 
@@ -757,10 +832,7 @@ export class Game {
       this.registerMiss();
 
       if (this.state === "rhythm") {
-        this.showFeedback(
-          "¡NO TOQUES LA EQUIS!",
-          "#ff576d"
-        );
+        this.showFeedback("¡NO TOQUES LA EQUIS!", "#ff576d");
       }
 
       this.checkRhythmEnd();
@@ -770,30 +842,18 @@ export class Game {
     if (note.type === "double") {
       const now = performance.now();
 
-      if (
-        note.firstClickTime === null ||
-        now - note.firstClickTime > 350
-      ) {
+      if (note.firstClickTime === null || now - note.firstClickTime > 350) {
         note.firstClickTime = now;
-
-        this.showFeedback(
-          "¡SEGUNDO CLIC!",
-          "#ffdc69"
-        );
-
+        this.showFeedback("¡SEGUNDO CLIC!", "#ffdc69");
         return;
       }
     }
 
     note.status = "hit";
 
-    const difference = Math.abs(
-      this.rhythmTime - note.time
-    );
+    const difference = Math.abs(this.rhythmTime - note.time);
 
-    let points = difference <= this.perfectWindow
-      ? 150
-      : 100;
+    let points = difference <= this.perfectWindow ? 150 : 100;
 
     if (note.type === "double") {
       points = 200;
@@ -813,16 +873,10 @@ export class Game {
         : note.type === "double"
           ? "¡DOBLE CLIC!"
           : "¡PERFECT!",
-      note.type === "star"
-        ? "#ffdc69"
-        : "#a6ff00"
+      note.type === "star" ? "#ffdc69" : "#a6ff00"
     );
 
-    this.addEffect(
-      note.x,
-      this.hitY,
-      "#53ddff"
-    );
+    this.addEffect(note.x, this.hitY, "#53ddff");
 
     this.checkRhythmEnd();
   }
@@ -831,13 +885,9 @@ export class Game {
     this.hits++;
     this.combo++;
 
-    this.bestCombo = Math.max(
-      this.bestCombo,
-      this.combo
-    );
+    this.bestCombo = Math.max(this.bestCombo, this.combo);
 
-    this.score += points +
-      Math.min(this.combo * 5, 100);
+    this.score += points + Math.min(this.combo * 5, 100);
 
     this.misses = 0;
   }
@@ -847,10 +897,7 @@ export class Game {
     this.totalMisses++;
     this.combo = 0;
 
-    this.showFeedback(
-      `ERROR ${this.misses}/${this.maxErrors}`,
-      "#ff576d"
-    );
+    this.showFeedback(`ERROR ${this.misses}/${this.maxErrors}`, "#ff576d");
 
     if (this.misses >= this.maxErrors) {
       this.endRhythm(false);
@@ -875,12 +922,7 @@ export class Game {
   checkRhythmEnd() {
     if (this.state !== "rhythm") return;
 
-    if (
-      this.notes.length > 0 &&
-      this.notes.every(
-        note => note.status !== "pending"
-      )
-    ) {
+    if (this.notes.length > 0 && this.notes.every(note => note.status !== "pending")) {
       this.endRhythm(true);
     }
   }
@@ -909,6 +951,7 @@ export class Game {
 
   endRhythm(won) {
     if (this.state !== "rhythm") return;
+    this.alien.stopDance();
 
     this.musicAttempt++;
     this.music.pause();
@@ -919,6 +962,7 @@ export class Game {
   }
 
   exitRhythm() {
+    this.alien.stopDance();
     this.musicAttempt++;
 
     this.music.pause();
@@ -949,10 +993,7 @@ export class Game {
     ctx.fillRect(0, 0, 1280, 720);
 
     if (this.backgroundVideo.readyState >= 2) {
-      ctx.drawImage(
-        this.backgroundVideo,
-        0, 0, 1280, 720
-      );
+      ctx.drawImage(this.backgroundVideo, 0, 0, 1280, 720);
     }
 
     ctx.fillStyle = "rgba(5,3,18,0.42)";
@@ -965,82 +1006,41 @@ export class Game {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (
-      this.duelRoom.complete &&
-      this.duelRoom.naturalWidth > 0
-    ) {
-      ctx.drawImage(
-        this.duelRoom,
-        0, 0, 1280, 720
-      );
+    if (this.duelRoom.complete && this.duelRoom.naturalWidth > 0) {
+      ctx.drawImage(this.duelRoom, 0, 0, 1280, 720);
     }
   }
 
   drawContainedImage(image, area) {
-    if (
-      !image.complete ||
-      !image.naturalWidth
-    ) {
+    if (!image.complete || !image.naturalWidth) {
       return;
     }
 
-    const scale = Math.min(
-      area.width / image.naturalWidth,
-      area.height / image.naturalHeight
-    );
+    const scale = Math.min(area.width / image.naturalWidth, area.height / image.naturalHeight);
 
     const width = image.naturalWidth * scale;
     const height = image.naturalHeight * scale;
 
-    const x = area.x +
-      (area.width - width) / 2;
+    const x = area.x + (area.width - width) / 2;
+    const y = area.y + (area.height - height) / 2;
 
-    const y = area.y +
-      (area.height - height) / 2;
-
-    this.context.drawImage(
-      image,
-      x,
-      y,
-      width,
-      height
-    );
+    this.context.drawImage(image, x, y, width, height);
   }
 
   drawSprite(image, x, y, size, color) {
     const ctx = this.context;
 
-    if (
-      image &&
-      image.complete &&
-      image.naturalWidth > 0
-    ) {
+    if (image && image.complete && image.naturalWidth > 0) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-
-      ctx.drawImage(
-        image,
-        x - size / 2,
-        y - size / 2,
-        size,
-        size
-      );
-
+      ctx.drawImage(image, x - size / 2, y - size / 2, size, size);
       ctx.restore();
     } else {
       ctx.save();
       ctx.fillStyle = color;
-
       ctx.beginPath();
-      ctx.arc(
-        x,
-        y,
-        size * 0.34,
-        0,
-        Math.PI * 2
-      );
+      ctx.arc(x, y, size * 0.34, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.restore();
     }
   }
@@ -1050,23 +1050,13 @@ export class Game {
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-
-    ctx.translate(
-      80 - this.player.x,
-      355 - this.player.y
-    );
-
+    ctx.translate(80 - this.player.x, 355 - this.player.y);
     this.player.draw(ctx);
     ctx.restore();
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-
-    ctx.translate(
-      990 - this.alien.x,
-      365 - this.alien.y
-    );
-
+    ctx.translate(990 - this.alien.x, 365 - this.alien.y);
     this.alien.draw(ctx);
     ctx.restore();
   }
@@ -1080,6 +1070,8 @@ export class Game {
       this.drawComic();
     } else if (this.state === "credits") {
       this.drawCredits();
+    } else if (this.state === "dialogue") {
+      this.drawDialogue();
     } else if (this.state === "rhythmIntro") {
       this.drawRhythmIntro();
     } else if (this.state === "rhythm") {
@@ -1095,36 +1087,19 @@ export class Game {
     const ctx = this.context;
 
     ctx.fillStyle = "#101225";
-    ctx.fillRect(
-      0,
-      0,
-      this.canvas.width,
-      this.canvas.height
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
-    if (
-      !this.comicImage.complete ||
-      this.comicImage.naturalWidth === 0
-    ) {
+    if (!this.comicImage.complete || !this.comicImage.naturalWidth) {
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "24px Arial";
-
-      ctx.fillText(
-        "Cargando cómic...",
-        640,
-        360
-      );
-
+      ctx.fillText("Cargando cómic...", 640, 360);
       ctx.textAlign = "start";
       return;
     }
 
-    const frameWidth =
-      this.comicImage.naturalWidth / 2;
-
-    const frameHeight =
-      this.comicImage.naturalHeight / 2;
+    const frameWidth = this.comicImage.naturalWidth / 2;
+    const frameHeight = this.comicImage.naturalHeight / 2;
 
     const column = this.comicIndex % 2;
     const row = Math.floor(this.comicIndex / 2);
@@ -1132,22 +1107,13 @@ export class Game {
     const sourceX = column * frameWidth;
     const sourceY = row * frameHeight;
 
-    const maxWidth = 1050;
-    const maxHeight = 580;
-
-    const scale = Math.min(
-      maxWidth / frameWidth,
-      maxHeight / frameHeight
-    );
+    const scale = Math.min(1050 / frameWidth, 580 / frameHeight);
 
     const drawWidth = frameWidth * scale;
     const drawHeight = frameHeight * scale;
 
-    const drawX =
-      (this.canvas.width - drawWidth) / 2;
-
-    const drawY =
-      (this.canvas.height - drawHeight) / 2 - 20;
+    const drawX = (1280 - drawWidth) / 2;
+    const drawY = (720 - drawHeight) / 2 - 20;
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -1168,26 +1134,95 @@ export class Game {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 21px 'Silkscreen'";
-
-    ctx.fillText(
-      `${this.comicIndex + 1} / ${this.comicTotal}`,
-      640,
-      655
-    );
+    ctx.font = "bold 21px Arial";
+    ctx.fillText(`${this.comicIndex + 1} / ${this.comicTotal}`, 640, 655);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px 'Silkscreen'";
-
+    ctx.font = "19px Arial";
     ctx.fillText(
-      this.comicIndex === this.comicTotal - 1
-        ? "HAZ CLIC PARA ENTRAR A LA SALA"
-        : "HAZ CLIC PARA CONTINUAR",
+      this.comicIndex === 3 ? "HAZ CLIC PARA ENTRAR A LA SALA" : "HAZ CLIC PARA CONTINUAR",
       640,
       690
     );
 
     ctx.textAlign = "start";
+  }
+
+  drawDialogue() {
+    const ctx = this.context;
+
+    this.drawDuelRoom();
+    this.alien.draw(ctx);
+    this.player.draw(ctx);
+
+    const dialogue = this.dialogues[this.dialogueIndex];
+
+    if (!dialogue) return;
+
+    const isFreddie = dialogue.speaker === "FREDDIE";
+    const speakerColor = isFreddie ? "#a6ff00" : "#53ddff";
+
+    ctx.fillStyle = "rgba(3,2,15,0.55)";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    ctx.fillStyle = "rgba(18,13,46,0.97)";
+    ctx.fillRect(75, 455, 1130, 225);
+
+    ctx.strokeStyle = speakerColor;
+    ctx.lineWidth = 5;
+    ctx.strokeRect(75, 455, 1130, 225);
+
+    ctx.fillStyle = speakerColor;
+    ctx.font = "bold 27px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(isFreddie ? "FREDDIE" : "PROTAGONISTA", 115, 505);
+
+    if (isFreddie) {
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "#c8c4d8";
+      ctx.fillText("Freddielux Mercury-9000", 265, 503);
+    }
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "23px Arial";
+    this.drawWrappedText(dialogue.text, 115, 547, 1040, 31);
+
+    ctx.fillStyle = "#bbb6d6";
+    ctx.font = "16px Arial";
+    ctx.textAlign = "right";
+    ctx.fillText(`${this.dialogueIndex + 1} / ${this.dialogues.length}`, 1140, 646);
+
+    ctx.fillStyle = speakerColor;
+    ctx.font = "bold 16px Arial";
+    ctx.fillText(
+      this.dialogueIndex === this.dialogues.length - 1
+        ? "CLIC PARA INICIAR EL TUTORIAL >"
+        : "CLIC PARA CONTINUAR >",
+      980,
+      646
+    );
+  }
+
+  drawWrappedText(text, x, y, maxWidth, lineHeight) {
+    const ctx = this.context;
+    const words = text.split(" ");
+    let line = "";
+
+    for (const word of words) {
+      const testLine = line ? line + " " + word : word;
+
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        ctx.fillText(line, x, y);
+        line = word;
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+
+    if (line) {
+      ctx.fillText(line, x, y);
+    }
   }
 
   drawPause() {
@@ -1197,6 +1232,8 @@ export class Game {
       this.drawGame();
     } else if (this.previousState === "comic") {
       this.drawComic();
+    } else if (this.previousState === "dialogue") {
+      this.drawDialogue();
     } else if (this.previousState === "rhythm") {
       this.drawRhythm();
     } else if (this.previousState === "rhythmIntro") {
@@ -1208,34 +1245,22 @@ export class Game {
     ctx.fillStyle = "rgba(0,0,0,0.70)";
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (
-      this.pauseImage.complete &&
-      this.pauseImage.naturalWidth > 0
-    ) {
+    if (this.pauseImage.complete && this.pauseImage.naturalWidth > 0) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-
-      ctx.drawImage(
-        this.pauseImage,
-        0,
-        0,
-        1280,
-        720
-      );
-
+      ctx.drawImage(this.pauseImage, 0, 0, 1280, 720);
       ctx.restore();
     } else {
       ctx.textAlign = "center";
-
       ctx.fillStyle = "#a6ff00";
-      ctx.font = "bold 78px 'Silkscreen'";
+      ctx.font = "bold 78px Arial";
       ctx.fillText("PAUSA", 640, 315);
 
       ctx.fillStyle = "#32e6ff";
       ctx.fillRect(475, 443, 307, 67);
 
       ctx.fillStyle = "#8000c8";
-      ctx.font = "bold 30px 'Silkscreen'";
+      ctx.font = "bold 30px Arial";
       ctx.fillText("CONTINUAR", 640, 488);
 
       ctx.fillStyle = "#8000c8";
@@ -1243,41 +1268,29 @@ export class Game {
 
       ctx.fillStyle = "#32e6ff";
       ctx.fillText("SALIR", 640, 565);
-
-      ctx.textAlign = "start";
     }
   }
 
   drawMenu() {
     this.drawBackground();
-
     this.drawContainedImage(this.logo, {
       x: 145,
       y: 30,
       width: 990,
       height: 390
     });
-
-    this.drawContainedImage(
-      this.playImage,
-      this.buttons.play
-    );
-
-    this.drawContainedImage(
-      this.creditsImage,
-      this.buttons.credits
-    );
+    this.drawContainedImage(this.playImage, this.buttons.play);
+    this.drawContainedImage(this.creditsImage, this.buttons.credits);
   }
 
   drawCredits() {
     const ctx = this.context;
 
     this.drawBackground();
-
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 48px 'Silkscreen'";
+    ctx.font = "bold 48px Arial";
     ctx.fillText("CREDITS", 640, 75);
 
     this.drawContainedImage(this.studioLogo, {
@@ -1288,35 +1301,25 @@ export class Game {
     });
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 30px 'Silkscreen'";
-    ctx.fillText(
-      "DOUBLE M STUDIO",
-      640,
-      385
-    );
+    ctx.font = "bold 27px Arial";
+    ctx.fillText("DOUBLE M STUDIO", 640, 385);
+
+    ctx.fillStyle = "#a6ff00";
+    ctx.font = "bold 20px Arial";
+    ctx.fillText("DESARROLLO DEL VIDEOJUEGO", 640, 425);
 
     ctx.fillStyle = "#c8c4d8";
-    ctx.font = "25px 'Silkscreen'";
-    ctx.fillText(
-      "Desarrollado por",
-      640,
-      425
-    );
+    ctx.font = "20px Arial";
+    ctx.fillText("Desarrollado por", 640, 465);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px 'Silkscreen'";
+    ctx.font = "bold 22px Arial";
+    ctx.fillText("Mariana A. Reyes", 640, 505);
+    ctx.fillText("Oscar Michel Ortega Martinez", 640, 540);
 
-    ctx.fillText(
-      "Mariana A. Reyes",
-      640,
-      460
-    );
-
-    ctx.fillText(
-      "Oscar Michel Ortega Martinez",
-      640,
-      500
-    );
+    ctx.fillStyle = "#a6ff00";
+    ctx.font = "18px Arial";
+    ctx.fillText("ABDUCCIÓN DISCO", 640, 585);
 
     this.drawBackButton();
   }
@@ -1326,13 +1329,8 @@ export class Game {
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
-    ctx.font = "20px 'Silkscreen'";
-
-    ctx.fillText(
-      "← BACK",
-      35,
-      55
-    );
+    ctx.font = "20px Arial";
+    ctx.fillText("← BACK", 35, 55);
   }
 
   drawGame() {
@@ -1346,15 +1344,8 @@ export class Game {
     if (this.isNear(this.player, this.alien)) {
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "20px 'Silkscreen'";
-
-      ctx.fillText(
-        "Presiona E para iniciar el duelo",
-        640,
-        675
-      );
-
-      ctx.textAlign = "start";
+      ctx.font = "20px Arial";
+      ctx.fillText("Presiona E para hablar con Freddie", 640, 675);
     }
   }
 
@@ -1378,22 +1369,12 @@ export class Game {
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 32px 'Silkscreen'";
-
-    ctx.fillText(
-      "TUTORIAL DE RITMO",
-      640,
-      115
-    );
+    ctx.font = "bold 32px Arial";
+    ctx.fillText("TUTORIAL DE RITMO", 640, 115);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px 'Silkscreen'";
-
-    ctx.fillText(
-      "Conoce las notas antes del duelo",
-      640,
-      150
-    );
+    ctx.font = "19px Arial";
+    ctx.fillText("Conoce las notas antes del duelo", 640, 150);
 
     const items = [
       {
@@ -1423,62 +1404,30 @@ export class Game {
     ];
 
     for (const item of items) {
-      this.drawSprite(
-        item.image,
-        410,
-        item.y,
-        72,
-        "#b970ff"
-      );
+      this.drawSprite(item.image, 410, item.y, 72, "#b970ff");
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px 'Silkscreen'";
+      ctx.font = "bold 20px Arial";
+      ctx.fillText(item.title, 460, item.y - 6);
 
-      ctx.fillText(
-        item.title,
-        460,
-        item.y - 6
-      );
-
-      ctx.font = "17px 'Silkscreen'";
-
-      ctx.fillText(
-        item.description,
-        460,
-        item.y + 20
-      );
+      ctx.font = "17px Arial";
+      ctx.fillText(item.description, 460, item.y + 20);
     }
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffdc69";
-    ctx.font = "16px 'Silkscreen'";
-
-    ctx.fillText(
-      "3 errores seguidos = derrota",
-      640,
-      588
-    );
+    ctx.font = "16px Arial";
+    ctx.fillText("3 errores seguidos = derrota", 640, 588);
 
     const button = this.buttons.begin;
 
     ctx.fillStyle = "#a6ff00";
-
-    ctx.fillRect(
-      button.x,
-      button.y,
-      button.width,
-      button.height
-    );
+    ctx.fillRect(button.x, button.y, button.width, button.height);
 
     ctx.fillStyle = "#101225";
-    ctx.font = "bold 25px 'Silkscreen'";
-
-    ctx.fillText(
-      "INICIAR DUELO",
-      640,
-      656
-    );
+    ctx.font = "bold 25px Arial";
+    ctx.fillText("INICIAR DUELO", 640, 656);
 
     this.drawBackButton();
   }
@@ -1494,91 +1443,36 @@ export class Game {
     this.drawCharacters();
 
     ctx.textAlign = "center";
-
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 33px 'Silkscreen'";
-
-    ctx.fillText(
-      "TUTORIAL DE RITMO",
-      640,
-      55
-    );
+    ctx.font = "bold 33px Arial";
+    ctx.fillText("TUTORIAL DE RITMO", 640, 55);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 23px 'Silkscreen'";
-
-    ctx.fillText(
-      `PUNTOS ${this.score}`,
-      175,
-      145
-    );
+    ctx.font = "bold 23px Arial";
+    ctx.fillText(`PUNTOS ${this.score}`, 175, 145);
 
     ctx.fillStyle = "#ff60b6";
-
-    ctx.fillText(
-      `COMBO x${this.combo}`,
-      1100,
-      145
-    );
+    ctx.fillText(`COMBO x${this.combo}`, 1100, 145);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px 'Silkscreen'";
-
-    ctx.fillText(
-      `ACIERTOS ${this.hits}`,
-      175,
-      210
-    );
-
-    ctx.fillText(
-      `ERRORES ${this.misses}/3`,
-      1100,
-      210
-    );
+    ctx.font = "19px Arial";
+    ctx.fillText(`ACIERTOS ${this.hits}`, 175, 210);
+    ctx.fillText(`ERRORES ${this.misses}/3`, 1100, 210);
 
     ctx.fillStyle = "#15112e";
-
-    ctx.fillRect(
-      this.trackLeft,
-      105,
-      this.trackRight - this.trackLeft,
-      520
-    );
+    ctx.fillRect(this.trackLeft, 105, this.trackRight - this.trackLeft, 520);
 
     ctx.strokeStyle = "#8e45dc";
     ctx.lineWidth = 4;
+    ctx.strokeRect(this.trackLeft, 105, this.trackRight - this.trackLeft, 520);
 
-    ctx.strokeRect(
-      this.trackLeft,
-      105,
-      this.trackRight - this.trackLeft,
-      520
-    );
+    const laneColors = ["#b970ff", "#32e6ff", "#55ff83", "#ff60b6"];
 
-    const laneColors = [
-      "#b970ff",
-      "#32e6ff",
-      "#55ff83",
-      "#ff60b6"
-    ];
-
-    for (
-      let i = 0;
-      i < this.notePositions.length;
-      i++
-    ) {
+    for (let i = 0; i < this.notePositions.length; i++) {
       const x = this.notePositions[i];
 
-      ctx.fillStyle = i % 2 === 0
-        ? "rgba(100,55,170,0.10)"
-        : "rgba(25,150,180,0.08)";
-
-      ctx.fillRect(
-        x - 58,
-        110,
-        116,
-        510
-      );
+      ctx.fillStyle = i % 2 === 0 ? "rgba(100,55,170,0.10)" : "rgba(25,150,180,0.08)";
+      ctx.fillRect(x - 58, 110, 116, 510);
 
       ctx.strokeStyle = laneColors[i];
       ctx.globalAlpha = 0.25;
@@ -1593,23 +1487,15 @@ export class Game {
     }
 
     ctx.save();
-
     ctx.strokeStyle = "#53ddff";
     ctx.lineWidth = 6;
     ctx.shadowColor = "#53ddff";
     ctx.shadowBlur = 20;
 
     ctx.beginPath();
-    ctx.moveTo(
-      this.trackLeft,
-      this.hitY
-    );
-    ctx.lineTo(
-      this.trackRight,
-      this.hitY
-    );
+    ctx.moveTo(this.trackLeft, this.hitY);
+    ctx.lineTo(this.trackRight, this.hitY);
     ctx.stroke();
-
     ctx.restore();
 
     for (const note of this.notes) {
@@ -1641,72 +1527,37 @@ export class Game {
         size = 95;
       }
 
-      this.drawSprite(
-        sprite,
-        note.x,
-        y,
-        size,
-        color
-      );
+      this.drawSprite(sprite, note.x, y, size, color);
     }
 
     for (const effect of this.effects) {
-      const progress =
-        1 - effect.life / 0.5;
+      const progress = 1 - effect.life / 0.5;
 
       ctx.save();
-
-      ctx.globalAlpha = Math.max(
-        0,
-        effect.life / 0.5
-      );
-
+      ctx.globalAlpha = Math.max(0, effect.life / 0.5);
       ctx.strokeStyle = effect.color;
       ctx.lineWidth = 5;
 
       ctx.beginPath();
-
-      ctx.arc(
-        effect.x,
-        effect.y,
-        30 + progress * 70,
-        0,
-        Math.PI * 2
-      );
-
+      ctx.arc(effect.x, effect.y, 30 + progress * 70, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
     ctx.fillStyle = "#b8edff";
-    ctx.font = "17px 'Silkscreen'";
-
-    ctx.fillText(
-      "HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA",
-      640,
-      651
-    );
+    ctx.font = "17px Arial";
+    ctx.fillText("HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA", 640, 651);
 
     if (this.feedbackTimer > 0) {
       ctx.fillStyle = this.feedbackColor;
-      ctx.font = "bold 22px 'Silkscreen'";
-
-      ctx.fillText(
-        this.feedback,
-        640,
-        94
-      );
+      ctx.font = "bold 22px Arial";
+      ctx.fillText(this.feedback, 640, 94);
     }
 
     if (this.music.playbackRate !== 1) {
       ctx.fillStyle = "#ffdc69";
-      ctx.font = "18px 'Silkscreen'";
-
-      ctx.fillText(
-        `VELOCIDAD x${this.music.playbackRate.toFixed(2)}`,
-        1100,
-        270
-      );
+      ctx.font = "18px Arial";
+      ctx.fillText(`VELOCIDAD x${this.music.playbackRate.toFixed(2)}`, 1100, 270);
     }
 
     this.drawBackButton();
@@ -1726,68 +1577,27 @@ export class Game {
 
     const victoria = this.result === "victory";
 
-    ctx.fillStyle = victoria
-      ? "#a6ff00"
-      : "#ff576d";
-
-    ctx.font = "bold 44px 'Silkscreen'";
-
-    ctx.fillText(
-      victoria
-        ? "¡SALA DESBLOQUEADA!"
-        : "¡HAS PERDIDO!",
-      640,
-      220
-    );
+    ctx.fillStyle = victoria ? "#a6ff00" : "#ff576d";
+    ctx.font = "bold 44px Arial";
+    ctx.fillText(victoria ? "¡TUTORIAL COMPLETADO!" : "¡HAS PERDIDO!", 640, 220);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 34px 'Silkscreen'";
+    ctx.font = "bold 34px Arial";
+    ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 305);
 
-    ctx.fillText(
-      `PUNTUACIÓN ${this.score}`,
-      640,
-      305
-    );
-
-    ctx.font = "23px 'Silkscreen'";
-
-    ctx.fillText(
-      `Aciertos: ${this.hits}`,
-      640,
-      365
-    );
-
-    ctx.fillText(
-      `Errores consecutivos: ${this.misses}`,
-      640,
-      405
-    );
-
-    ctx.fillText(
-      `Errores totales: ${this.totalMisses}`,
-      640,
-      445
-    );
+    ctx.font = "23px Arial";
+    ctx.fillText(`Aciertos: ${this.hits}`, 640, 365);
+    ctx.fillText(`Errores consecutivos: ${this.misses}`, 640, 405);
+    ctx.fillText(`Errores totales: ${this.totalMisses}`, 640, 445);
 
     const button = this.buttons.restart;
 
     ctx.fillStyle = "#a6ff00";
-
-    ctx.fillRect(
-      button.x,
-      button.y,
-      button.width,
-      button.height
-    );
+    ctx.fillRect(button.x, button.y, button.width, button.height);
 
     ctx.fillStyle = "#101225";
-    ctx.font = "bold 25px 'Silkscreen'";
-
-    ctx.fillText(
-      "VOLVER A JUGAR",
-      640,
-      540
-    );
+    ctx.font = "bold 25px Arial";
+    ctx.fillText("VOLVER A JUGAR", 640, 540);
 
     this.drawBackButton();
   }
