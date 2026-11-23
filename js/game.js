@@ -16,13 +16,23 @@ export class Game {
     this.duelRoom = this.loadImage("./assets/sala-duelo.jpeg");
     this.pauseImage = this.loadImage("./assets/pause.png");
     this.comicImage = this.loadImage("./assets/Comic_Inicio.png");
+    this.hallwayImage = this.loadImage("./assets/Pasillo01.png");
 
     this.normalSprite = this.loadImage("./assets/Notas/normal02.png");
     this.doubleSprite = this.loadImage("./assets/Notas/dobleClic02.png");
     this.starSprite = this.loadImage("./assets/Notas/star01.png");
     this.crossoutSprite = this.loadImage("./assets/Notas/crossout01.png");
 
-    this.player = new Player(390, 430);
+    this.playerStart = {
+      x: 390,
+      y: 430
+    };
+
+    this.player = new Player(
+      this.playerStart.x,
+      this.playerStart.y
+    );
+
     this.alien = new Enemy(260, 410, "Freddie");
 
     this.state = "menu";
@@ -37,8 +47,30 @@ export class Game {
 
     this.comicIndex = 0;
     this.comicTotal = 4;
-
     this.dialogueIndex = 0;
+
+    this.tutorialCompleted = false;
+
+    this.door = {
+      x: 245,
+      y: 605,
+      radius: 125
+    };
+
+    this.hallwayWalkableArea = [
+      { x: 0, y: 495 },
+      { x: 300, y: 495 },
+      { x: 640, y: 500 },
+      { x: 950, y: 495 },
+      { x: 1280, y: 495 },
+      { x: 1280, y: 720 },
+      { x: 0, y: 720 }
+    ];
+
+    this.hallwaySpawn = {
+      x: 1030,
+      y: 565
+    };
 
     this.dialogues = [
       {
@@ -198,8 +230,18 @@ export class Game {
     ];
 
     this.blockedAreas = [
-      { x: 350, y: 440, width: 230, height: 120 },
-      { x: 1030, y: 390, width: 250, height: 220 }
+      {
+        x: 350,
+        y: 440,
+        width: 230,
+        height: 120
+      },
+      {
+        x: 1030,
+        y: 390,
+        width: 250,
+        height: 220
+      }
     ];
 
     this.buttons = {
@@ -273,9 +315,15 @@ export class Game {
     this.hitWindow = 0.2;
     this.perfectWindow = 0.075;
 
-    this.notePositions = [440, 560, 680, 800];
+    this.notePositions = [
+      440,
+      560,
+      680,
+      800
+    ];
 
     this.maxErrors = 3;
+
     this.notes = [];
     this.effects = [];
 
@@ -310,12 +358,16 @@ export class Game {
         if (this.state === "paused") {
           this.resumeGame();
         } else if (
-          this.state === "playing" ||
-          this.state === "comic" ||
-          this.state === "dialogue" ||
-          this.state === "rhythmIntro" ||
-          this.state === "rhythm" ||
-          this.state === "rhythmEnd"
+          [
+            "playing",
+            "comic",
+            "dialogue",
+            "rhythmIntro",
+            "rhythm",
+            "rhythmEnd",
+            "victoryDialogue",
+            "hallway"
+          ].includes(this.state)
         ) {
           this.pauseGame();
         }
@@ -325,7 +377,10 @@ export class Game {
 
       if (
         this.state === "dialogue" &&
-        (event.key === "Enter" || event.code === "Space")
+        (
+          event.key === "Enter" ||
+          event.code === "Space"
+        )
       ) {
         event.preventDefault();
 
@@ -337,8 +392,27 @@ export class Game {
       }
 
       if (
+        this.state === "victoryDialogue" &&
+        (
+          event.key === "Enter" ||
+          event.code === "Space"
+        )
+      ) {
+        event.preventDefault();
+
+        if (!event.repeat) {
+          this.finishVictoryDialogue();
+        }
+
+        return;
+      }
+
+      if (
         this.state === "rhythmIntro" &&
-        (event.key === "Enter" || event.code === "Space")
+        (
+          event.key === "Enter" ||
+          event.code === "Space"
+        )
       ) {
         event.preventDefault();
 
@@ -360,29 +434,44 @@ export class Game {
 
     this.started = true;
     this.lastTime = performance.now();
+
     requestAnimationFrame(this.loop);
   }
 
   loop = time => {
-  const deltaTime = Math.min(
-    Math.max((time - this.lastTime) / 1000, 0),
-    0.05
-  );
+    const deltaTime = Math.min(
+      Math.max(
+        (time - this.lastTime) / 1000,
+        0
+      ),
+      0.05
+    );
 
-  this.lastTime = time;
+    this.lastTime = time;
 
-  if (this.state === "playing") {
-    this.update(deltaTime);
-  }
+    if (
+      this.state === "rhythm" &&
+      typeof this.alien.update === "function"
+    ) {
+      this.alien.update(deltaTime);
+    }
 
-  if (this.state === "rhythm") {
-    this.alien.update(deltaTime);
-    this.updateRhythm(deltaTime);
-  }
+    if (this.state === "playing") {
+      this.update(deltaTime);
+    }
 
-  this.draw();
-  requestAnimationFrame(this.loop);
-};
+    if (this.state === "hallway") {
+      this.updateHallway(deltaTime);
+    }
+
+    if (this.state === "rhythm") {
+      this.updateRhythm(deltaTime);
+    }
+
+    this.draw();
+
+    requestAnimationFrame(this.loop);
+  };
 
   isInside(x, y, button) {
     return (
@@ -393,11 +482,85 @@ export class Game {
     );
   }
 
+  resetPlayerPosition() {
+    this.player.x = this.playerStart.x;
+    this.player.y = this.playerStart.y;
+  }
+
+  resetGame() {
+    this.musicAttempt++;
+
+    this.music.pause();
+    this.music.playbackRate = 1;
+
+    try {
+      this.music.currentTime = 0;
+    } catch (error) {
+      console.warn(error);
+    }
+
+    if (
+      typeof this.alien.stopDance === "function"
+    ) {
+      this.alien.stopDance();
+    }
+
+    this.resetPlayerPosition();
+
+    this.tutorialCompleted = false;
+
+    this.comicIndex = 0;
+    this.dialogueIndex = 0;
+
+    this.score = 0;
+    this.combo = 0;
+    this.bestCombo = 0;
+    this.hits = 0;
+    this.misses = 0;
+    this.totalMisses = 0;
+    this.avoidedTraps = 0;
+
+    this.notes = [];
+    this.effects = [];
+
+    this.rhythmTime = 0;
+    this.fallbackTime = 0;
+    this.speedEffectUntil = 0;
+
+    this.feedback = "";
+    this.feedbackTimer = 0;
+
+    this.result = "";
+
+    this.musicError = false;
+    this.audioStarted = false;
+
+    this.previousState = null;
+    this.musicWasPlaying = false;
+    this.videoWasPlaying = false;
+
+    this.wasInteracting = this.player.wantsToInteract();
+
+    this.lastTime = performance.now();
+  }
+
   handleClick(x, y, detail = 1) {
     if (this.state === "paused") {
-      if (this.isInside(x, y, this.buttons.pauseContinue)) {
+      if (
+        this.isInside(
+          x,
+          y,
+          this.buttons.pauseContinue
+        )
+      ) {
         this.resumeGame();
-      } else if (this.isInside(x, y, this.buttons.pauseExit)) {
+      } else if (
+        this.isInside(
+          x,
+          y,
+          this.buttons.pauseExit
+        )
+      ) {
         this.exitPause();
       }
 
@@ -405,10 +568,14 @@ export class Game {
     }
 
     if (this.state === "menu") {
-      if (this.isInside(x, y, this.buttons.play)) {
-        this.comicIndex = 0;
+      if (
+        this.isInside(x, y, this.buttons.play)
+      ) {
+        this.resetGame();
         this.state = "comic";
-      } else if (this.isInside(x, y, this.buttons.credits)) {
+      } else if (
+        this.isInside(x, y, this.buttons.credits)
+      ) {
         this.state = "credits";
       }
 
@@ -418,10 +585,17 @@ export class Game {
     if (this.state === "comic") {
       this.comicIndex++;
 
-      if (this.comicIndex >= this.comicTotal) {
+      if (
+        this.comicIndex >= this.comicTotal
+      ) {
         this.comicIndex = 0;
+
+        this.resetPlayerPosition();
+
         this.state = "playing";
-        this.wasInteracting = true;
+
+        this.wasInteracting =
+          this.player.wantsToInteract();
       }
 
       return;
@@ -432,8 +606,15 @@ export class Game {
       return;
     }
 
+    if (this.state === "victoryDialogue") {
+      this.finishVictoryDialogue();
+      return;
+    }
+
     if (this.state === "credits") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.state = "menu";
       }
 
@@ -441,9 +622,13 @@ export class Game {
     }
 
     if (this.state === "rhythmIntro") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.exitRhythm();
-      } else if (this.isInside(x, y, this.buttons.begin)) {
+      } else if (
+        this.isInside(x, y, this.buttons.begin)
+      ) {
         this.beginRhythm();
       }
 
@@ -451,9 +636,13 @@ export class Game {
     }
 
     if (this.state === "rhythmEnd") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.exitRhythm();
-      } else if (this.isInside(x, y, this.buttons.restart)) {
+      } else if (
+        this.isInside(x, y, this.buttons.restart)
+      ) {
         this.startRhythm();
       }
 
@@ -461,7 +650,9 @@ export class Game {
     }
 
     if (this.state === "rhythm") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.exitRhythm();
       } else {
         this.hitNote(x, y, detail);
@@ -470,16 +661,92 @@ export class Game {
   }
 
   update(deltaTime) {
-    this.player.update(deltaTime, this.canvas, (x, y) => this.isPositionAllowed(x, y));
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => this.isPositionAllowed(x, y)
+    );
 
-    const interacting = this.player.wantsToInteract();
-    const nearAlien = this.isNear(this.player, this.alien);
+    const interacting =
+      this.player.wantsToInteract();
 
-    if (interacting && !this.wasInteracting && nearAlien) {
-      this.startDialogue();
+    if (
+      interacting &&
+      !this.wasInteracting
+    ) {
+      if (
+        this.tutorialCompleted &&
+        this.isNearDoor()
+      ) {
+        this.enterHallway();
+      } else if (
+        !this.tutorialCompleted &&
+        this.isNear(
+          this.player,
+          this.alien
+        )
+      ) {
+        this.startDialogue();
+      }
     }
 
     this.wasInteracting = interacting;
+  }
+
+  updateHallway(deltaTime) {
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => {
+        const feet =
+          this.player.getFootPosition(x, y);
+
+        return this.isPointInsidePolygon(
+          feet,
+          this.hallwayWalkableArea
+        );
+      }
+    );
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
+  }
+
+  isNearDoor() {
+    const feet = this.player.getFootPosition(
+      this.player.x,
+      this.player.y
+    );
+
+    const dx = feet.x - this.door.x;
+    const dy = feet.y - this.door.y;
+
+    return (
+      Math.hypot(dx, dy) <= this.door.radius
+    );
+  }
+
+  enterHallway() {
+    if (!this.tutorialCompleted) return;
+
+    const feet = this.player.getFootPosition(
+      this.player.x,
+      this.player.y
+    );
+
+    const offsetX = feet.x - this.player.x;
+    const offsetY = feet.y - this.player.y;
+
+    this.player.x =
+      this.hallwaySpawn.x - offsetX;
+
+    this.player.y =
+      this.hallwaySpawn.y - offsetY;
+
+    this.state = "hallway";
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   startDialogue() {
@@ -493,16 +760,37 @@ export class Game {
 
     this.dialogueIndex++;
 
-    if (this.dialogueIndex >= this.dialogues.length) {
+    if (
+      this.dialogueIndex >= this.dialogues.length
+    ) {
       this.dialogueIndex = 0;
       this.startRhythm();
     }
   }
 
-  isPositionAllowed(x, y) {
-    const feet = this.player.getFootPosition(x, y);
+  finishVictoryDialogue() {
+    if (
+      this.state !== "victoryDialogue"
+    ) {
+      return;
+    }
 
-    if (!this.isPointInsidePolygon(feet, this.walkableArea)) {
+    this.state = "playing";
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
+  }
+
+  isPositionAllowed(x, y) {
+    const feet =
+      this.player.getFootPosition(x, y);
+
+    if (
+      !this.isPointInsidePolygon(
+        feet,
+        this.walkableArea
+      )
+    ) {
       return false;
     }
 
@@ -523,15 +811,23 @@ export class Game {
   isPointInsidePolygon(point, polygon) {
     let inside = false;
 
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    for (
+      let i = 0, j = polygon.length - 1;
+      i < polygon.length;
+      j = i++
+    ) {
       const a = polygon[i];
       const b = polygon[j];
 
       const intersects =
         (a.y > point.y) !== (b.y > point.y) &&
-        point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+        point.x <
+          ((b.x - a.x) * (point.y - a.y)) /
+          (b.y - a.y) + a.x;
 
-      if (intersects) inside = !inside;
+      if (intersects) {
+        inside = !inside;
+      }
     }
 
     return inside;
@@ -540,18 +836,25 @@ export class Game {
   isNear(player, target) {
     const px = player.x + player.width / 2;
     const py = player.y + player.height / 2;
+
     const tx = target.x + target.width / 2;
     const ty = target.y + target.height / 2;
 
-    return Math.hypot(px - tx, py - ty) < 120;
+    return (
+      Math.hypot(px - tx, py - ty) < 120
+    );
   }
 
   pauseGame() {
     if (this.state === "paused") return;
 
     this.previousState = this.state;
-    this.videoWasPlaying = !this.backgroundVideo.paused;
-    this.musicWasPlaying = !this.music.paused;
+
+    this.videoWasPlaying =
+      !this.backgroundVideo.paused;
+
+    this.musicWasPlaying =
+      !this.music.paused;
 
     this.backgroundVideo.pause();
     this.music.pause();
@@ -562,14 +865,19 @@ export class Game {
   resumeGame() {
     if (this.state !== "paused") return;
 
-    this.state = this.previousState || "playing";
+    this.state =
+      this.previousState || "playing";
+
     this.previousState = null;
 
     if (this.videoWasPlaying) {
       this.backgroundVideo.play().catch(() => {});
     }
 
-    if (this.musicWasPlaying && this.state === "rhythm") {
+    if (
+      this.musicWasPlaying &&
+      this.state === "rhythm"
+    ) {
       this.music.play().catch(error => {
         console.warn(error);
         this.musicError = true;
@@ -580,32 +888,19 @@ export class Game {
     this.musicWasPlaying = false;
 
     this.lastTime = performance.now();
-    this.wasInteracting = true;
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   exitPause() {
     if (this.state !== "paused") return;
 
-    this.musicAttempt++;
-    this.music.pause();
-    this.music.playbackRate = 1;
-
-    try {
-      this.music.currentTime = 0;
-    } catch (error) {
-      console.warn(error);
-    }
-
-    this.previousState = null;
-    this.videoWasPlaying = false;
-    this.musicWasPlaying = false;
-    this.speedEffectUntil = 0;
-    this.dialogueIndex = 0;
+    this.resetGame();
 
     this.backgroundVideo.play().catch(() => {});
 
     this.state = "menu";
-    this.wasInteracting = false;
   }
 
   randomType() {
@@ -624,29 +919,64 @@ export class Game {
     let interval = 0.85;
     let first = 3;
 
-    if (Number.isFinite(duration) && duration > 0) {
-      first = Math.min(3, Math.max(0.5, duration * 0.15));
+    if (
+      Number.isFinite(duration) &&
+      duration > 0
+    ) {
+      first = Math.min(
+        3,
+        Math.max(0.5, duration * 0.15)
+      );
 
-      interval = Math.min(1.1, Math.max(0.38, (duration - first - 0.8) / 25));
+      interval = Math.min(
+        1.1,
+        Math.max(
+          0.38,
+          (duration - first - 0.8) / 25
+        )
+      );
 
-      total = Math.max(1, Math.min(24, Math.floor((duration - first - 0.4) / interval)));
+      total = Math.max(
+        1,
+        Math.min(
+          24,
+          Math.floor(
+            (duration - first - 0.4) /
+            interval
+          )
+        )
+      );
     }
 
-    const starIndex = total >= 8 ? Math.floor(total * (0.35 + Math.random() * 0.3)) : -1;
+    const starIndex = total >= 8
+      ? Math.floor(
+          total *
+          (0.35 + Math.random() * 0.3)
+        )
+      : -1;
 
     this.notes = [];
+
     let previousLane = -1;
 
     for (let i = 0; i < total; i++) {
-      let lane = Math.floor(Math.random() * this.notePositions.length);
+      let lane = Math.floor(
+        Math.random() * this.notePositions.length
+      );
 
       if (lane === previousLane) {
-        lane = (lane + 1 + Math.floor(Math.random() * 3)) % this.notePositions.length;
+        lane = (
+          lane +
+          1 +
+          Math.floor(Math.random() * 3)
+        ) % this.notePositions.length;
       }
 
       previousLane = lane;
 
-      const type = i === starIndex ? "star" : this.randomType();
+      const type = i === starIndex
+        ? "star"
+        : this.randomType();
 
       this.notes.push({
         id: i,
@@ -661,6 +991,7 @@ export class Game {
 
   startRhythm() {
     this.musicAttempt++;
+
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -668,6 +999,12 @@ export class Game {
       this.music.currentTime = 0;
     } catch (error) {
       console.warn(error);
+    }
+
+    if (
+      typeof this.alien.stopDance === "function"
+    ) {
+      this.alien.stopDance();
     }
 
     this.state = "rhythmIntro";
@@ -711,8 +1048,13 @@ export class Game {
     this.audioStarted = false;
 
     this.buildChart();
-this.state = "rhythm";
-this.alien.startDance();
+    this.state = "rhythm";
+
+    if (
+      typeof this.alien.startDance === "function"
+    ) {
+      this.alien.startDance();
+    }
 
     this.music.play().then(() => {
       if (attemptId !== this.musicAttempt) return;
@@ -730,18 +1072,29 @@ this.alien.startDance();
 
       if (this.state === "rhythm") {
         this.musicError = true;
-        this.showFeedback("MODO PRÁCTICA SIN AUDIO", "#ffdc69");
+
+        this.showFeedback(
+          "MODO PRÁCTICA SIN AUDIO",
+          "#ffdc69"
+        );
       }
     });
   }
 
   getRhythmTime(deltaTime) {
-    if (!this.musicError && !this.music.paused && this.music.readyState >= 2) {
+    if (
+      !this.musicError &&
+      !this.music.paused &&
+      this.music.readyState >= 2
+    ) {
       this.audioStarted = true;
       return this.music.currentTime;
     }
 
-    if (this.audioStarted && !this.musicError) {
+    if (
+      this.audioStarted &&
+      !this.musicError
+    ) {
       return this.rhythmTime;
     }
 
@@ -754,17 +1107,26 @@ this.alien.startDance();
   }
 
   updateRhythm(deltaTime) {
-    this.rhythmTime = this.getRhythmTime(deltaTime);
+    this.rhythmTime =
+      this.getRhythmTime(deltaTime);
 
-    this.feedbackTimer = Math.max(0, this.feedbackTimer - deltaTime);
+    this.feedbackTimer = Math.max(
+      0,
+      this.feedbackTimer - deltaTime
+    );
 
     for (const effect of this.effects) {
       effect.life -= deltaTime;
     }
 
-    this.effects = this.effects.filter(effect => effect.life > 0);
+    this.effects = this.effects.filter(
+      effect => effect.life > 0
+    );
 
-    if (this.speedEffectUntil > 0 && this.rhythmTime >= this.speedEffectUntil) {
+    if (
+      this.speedEffectUntil > 0 &&
+      this.rhythmTime >= this.speedEffectUntil
+    ) {
       this.music.playbackRate = 1;
       this.speedEffectUntil = 0;
     }
@@ -772,7 +1134,10 @@ this.alien.startDance();
     for (const note of this.notes) {
       if (note.status !== "pending") continue;
 
-      if (this.rhythmTime > note.time + this.hitWindow) {
+      if (
+        this.rhythmTime >
+        note.time + this.hitWindow
+      ) {
         if (note.type === "crossout") {
           note.status = "avoided";
           this.avoidedTraps++;
@@ -791,7 +1156,11 @@ this.alien.startDance();
   }
 
   getNoteY(note) {
-    return this.hitY - (note.time - this.rhythmTime) * this.noteSpeed;
+    return (
+      this.hitY -
+      (note.time - this.rhythmTime) *
+      this.noteSpeed
+    );
   }
 
   getHittableNote(x) {
@@ -801,11 +1170,21 @@ this.alien.startDance();
     for (const note of this.notes) {
       if (note.status !== "pending") continue;
 
-      const difference = Math.abs(this.rhythmTime - note.time);
-      const distanceX = Math.abs(x - note.x);
+      const difference = Math.abs(
+        this.rhythmTime - note.time
+      );
 
-      if (difference <= this.hitWindow && distanceX <= 55) {
-        const distance = difference * this.noteSpeed + distanceX * 0.15;
+      const distanceX = Math.abs(
+        x - note.x
+      );
+
+      if (
+        difference <= this.hitWindow &&
+        distanceX <= 55
+      ) {
+        const distance =
+          difference * this.noteSpeed +
+          distanceX * 0.15;
 
         if (distance < bestDistance) {
           candidate = note;
@@ -823,7 +1202,10 @@ this.alien.startDance();
     const note = this.getHittableNote(x);
 
     if (!note) {
-      this.showFeedback("FUERA DE TIEMPO", "#ff647a");
+      this.showFeedback(
+        "FUERA DE TIEMPO",
+        "#ff647a"
+      );
       return;
     }
 
@@ -832,7 +1214,10 @@ this.alien.startDance();
       this.registerMiss();
 
       if (this.state === "rhythm") {
-        this.showFeedback("¡NO TOQUES LA EQUIS!", "#ff576d");
+        this.showFeedback(
+          "¡NO TOQUES LA EQUIS!",
+          "#ff576d"
+        );
       }
 
       this.checkRhythmEnd();
@@ -842,18 +1227,30 @@ this.alien.startDance();
     if (note.type === "double") {
       const now = performance.now();
 
-      if (note.firstClickTime === null || now - note.firstClickTime > 350) {
+      if (
+        note.firstClickTime === null ||
+        now - note.firstClickTime > 350
+      ) {
         note.firstClickTime = now;
-        this.showFeedback("¡SEGUNDO CLIC!", "#ffdc69");
+
+        this.showFeedback(
+          "¡SEGUNDO CLIC!",
+          "#ffdc69"
+        );
+
         return;
       }
     }
 
     note.status = "hit";
 
-    const difference = Math.abs(this.rhythmTime - note.time);
+    const difference = Math.abs(
+      this.rhythmTime - note.time
+    );
 
-    let points = difference <= this.perfectWindow ? 150 : 100;
+    let points = difference <= this.perfectWindow
+      ? 150
+      : 100;
 
     if (note.type === "double") {
       points = 200;
@@ -872,11 +1269,17 @@ this.alien.startDance();
         ? "¡ESTRELLA! TIEMPO LENTO"
         : note.type === "double"
           ? "¡DOBLE CLIC!"
-          : "¡PERFECT!",
-      note.type === "star" ? "#ffdc69" : "#a6ff00"
+          : "¡PERFECTO!",
+      note.type === "star"
+        ? "#ffdc69"
+        : "#a6ff00"
     );
 
-    this.addEffect(note.x, this.hitY, "#53ddff");
+    this.addEffect(
+      note.x,
+      this.hitY,
+      "#53ddff"
+    );
 
     this.checkRhythmEnd();
   }
@@ -885,9 +1288,14 @@ this.alien.startDance();
     this.hits++;
     this.combo++;
 
-    this.bestCombo = Math.max(this.bestCombo, this.combo);
+    this.bestCombo = Math.max(
+      this.bestCombo,
+      this.combo
+    );
 
-    this.score += points + Math.min(this.combo * 5, 100);
+    this.score +=
+      points +
+      Math.min(this.combo * 5, 100);
 
     this.misses = 0;
   }
@@ -897,7 +1305,10 @@ this.alien.startDance();
     this.totalMisses++;
     this.combo = 0;
 
-    this.showFeedback(`ERROR ${this.misses}/${this.maxErrors}`, "#ff576d");
+    this.showFeedback(
+      `ERROR ${this.misses}/${this.maxErrors}`,
+      "#ff576d"
+    );
 
     if (this.misses >= this.maxErrors) {
       this.endRhythm(false);
@@ -922,7 +1333,12 @@ this.alien.startDance();
   checkRhythmEnd() {
     if (this.state !== "rhythm") return;
 
-    if (this.notes.length > 0 && this.notes.every(note => note.status !== "pending")) {
+    if (
+      this.notes.length > 0 &&
+      this.notes.every(
+        note => note.status !== "pending"
+      )
+    ) {
       this.endRhythm(true);
     }
   }
@@ -951,20 +1367,31 @@ this.alien.startDance();
 
   endRhythm(won) {
     if (this.state !== "rhythm") return;
-    this.alien.stopDance();
 
     this.musicAttempt++;
     this.music.pause();
     this.music.playbackRate = 1;
 
-    this.state = "rhythmEnd";
-    this.result = won ? "victory" : "defeat";
+    if (
+      typeof this.alien.stopDance === "function"
+    ) {
+      this.alien.stopDance();
+    }
+
+    this.result = won
+      ? "victory"
+      : "defeat";
+
+    if (won) {
+      this.tutorialCompleted = true;
+      this.state = "victoryDialogue";
+    } else {
+      this.state = "rhythmEnd";
+    }
   }
 
   exitRhythm() {
-    this.alien.stopDance();
     this.musicAttempt++;
-
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -974,8 +1401,16 @@ this.alien.startDance();
       console.warn(error);
     }
 
+    if (
+      typeof this.alien.stopDance === "function"
+    ) {
+      this.alien.stopDance();
+    }
+
     this.state = "playing";
-    this.wasInteracting = true;
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   startSliderAt(x, y) {
@@ -993,7 +1428,13 @@ this.alien.startDance();
     ctx.fillRect(0, 0, 1280, 720);
 
     if (this.backgroundVideo.readyState >= 2) {
-      ctx.drawImage(this.backgroundVideo, 0, 0, 1280, 720);
+      ctx.drawImage(
+        this.backgroundVideo,
+        0,
+        0,
+        1280,
+        720
+      );
     }
 
     ctx.fillStyle = "rgba(5,3,18,0.42)";
@@ -1006,40 +1447,125 @@ this.alien.startDance();
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (this.duelRoom.complete && this.duelRoom.naturalWidth > 0) {
-      ctx.drawImage(this.duelRoom, 0, 0, 1280, 720);
+    if (
+      this.duelRoom.complete &&
+      this.duelRoom.naturalWidth > 0
+    ) {
+      ctx.drawImage(
+        this.duelRoom,
+        0,
+        0,
+        1280,
+        720
+      );
+    }
+  }
+
+  drawHallwayBackground() {
+    const ctx = this.context;
+
+    ctx.fillStyle = "#080b23";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    if (
+      this.hallwayImage.complete &&
+      this.hallwayImage.naturalWidth > 0
+    ) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+
+      ctx.drawImage(
+        this.hallwayImage,
+        0,
+        0,
+        1280,
+        720
+      );
+
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "24px Arial";
+      ctx.textAlign = "center";
+
+      ctx.fillText(
+        "No se encontró Pasillo01.png",
+        640,
+        320
+      );
     }
   }
 
   drawContainedImage(image, area) {
-    if (!image.complete || !image.naturalWidth) {
+    if (
+      !image.complete ||
+      !image.naturalWidth
+    ) {
       return;
     }
 
-    const scale = Math.min(area.width / image.naturalWidth, area.height / image.naturalHeight);
+    const scale = Math.min(
+      area.width / image.naturalWidth,
+      area.height / image.naturalHeight
+    );
 
-    const width = image.naturalWidth * scale;
-    const height = image.naturalHeight * scale;
+    const width =
+      image.naturalWidth * scale;
 
-    const x = area.x + (area.width - width) / 2;
-    const y = area.y + (area.height - height) / 2;
+    const height =
+      image.naturalHeight * scale;
 
-    this.context.drawImage(image, x, y, width, height);
+    const x =
+      area.x +
+      (area.width - width) / 2;
+
+    const y =
+      area.y +
+      (area.height - height) / 2;
+
+    this.context.drawImage(
+      image,
+      x,
+      y,
+      width,
+      height
+    );
   }
 
   drawSprite(image, x, y, size, color) {
     const ctx = this.context;
 
-    if (image && image.complete && image.naturalWidth > 0) {
+    if (
+      image &&
+      image.complete &&
+      image.naturalWidth > 0
+    ) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(image, x - size / 2, y - size / 2, size, size);
+
+      ctx.drawImage(
+        image,
+        x - size / 2,
+        y - size / 2,
+        size,
+        size
+      );
+
       ctx.restore();
     } else {
       ctx.save();
+
       ctx.fillStyle = color;
+
       ctx.beginPath();
-      ctx.arc(x, y, size * 0.34, 0, Math.PI * 2);
+      ctx.arc(
+        x,
+        y,
+        size * 0.34,
+        0,
+        Math.PI * 2
+      );
+
       ctx.fill();
       ctx.restore();
     }
@@ -1050,15 +1576,138 @@ this.alien.startDance();
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.translate(80 - this.player.x, 355 - this.player.y);
+
+    ctx.translate(
+      80 - this.player.x,
+      355 - this.player.y
+    );
+
     this.player.draw(ctx);
     ctx.restore();
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.translate(990 - this.alien.x, 365 - this.alien.y);
+
+    ctx.translate(
+      990 - this.alien.x,
+      365 - this.alien.y
+    );
+
     this.alien.draw(ctx);
     ctx.restore();
+  }
+
+  drawWrappedText(
+    text,
+    x,
+    y,
+    maxWidth,
+    lineHeight
+  ) {
+    const ctx = this.context;
+    const words = text.split(" ");
+
+    let line = "";
+
+    for (const word of words) {
+      const nextLine = line
+        ? line + " " + word
+        : word;
+
+      if (
+        ctx.measureText(nextLine).width >
+        maxWidth &&
+        line
+      ) {
+        ctx.fillText(line, x, y);
+        line = word;
+        y += lineHeight;
+      } else {
+        line = nextLine;
+      }
+    }
+
+    if (line) {
+      ctx.fillText(line, x, y);
+    }
+  }
+
+  drawDialogueBox(speaker, text, hint) {
+    const ctx = this.context;
+
+    const color =
+      speaker === "FREDDIE"
+        ? "#a6ff00"
+        : "#53ddff";
+
+    ctx.fillStyle =
+      "rgba(3,2,15,0.55)";
+
+    ctx.fillRect(0, 0, 1280, 720);
+
+    ctx.fillStyle =
+      "rgba(18,13,46,0.97)";
+
+    ctx.fillRect(
+      75,
+      455,
+      1130,
+      225
+    );
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 5;
+
+    ctx.strokeRect(
+      75,
+      455,
+      1130,
+      225
+    );
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = color;
+    ctx.font = "bold 27px Arial";
+
+    ctx.fillText(
+      speaker,
+      115,
+      505
+    );
+
+    if (speaker === "FREDDIE") {
+      ctx.font = "16px Arial";
+      ctx.fillStyle = "#c8c4d8";
+
+      ctx.fillText(
+        "Freddielux Mercury-9000",
+        265,
+        503
+      );
+    }
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "23px Arial";
+
+    this.drawWrappedText(
+      text,
+      115,
+      547,
+      1040,
+      31
+    );
+
+    ctx.fillStyle = color;
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "right";
+
+    ctx.fillText(
+      hint,
+      1150,
+      646
+    );
+
+    ctx.textAlign = "start";
   }
 
   draw() {
@@ -1072,12 +1721,20 @@ this.alien.startDance();
       this.drawCredits();
     } else if (this.state === "dialogue") {
       this.drawDialogue();
-    } else if (this.state === "rhythmIntro") {
+    } else if (
+      this.state === "victoryDialogue"
+    ) {
+      this.drawVictoryDialogue();
+    } else if (
+      this.state === "rhythmIntro"
+    ) {
       this.drawRhythmIntro();
     } else if (this.state === "rhythm") {
       this.drawRhythm();
     } else if (this.state === "rhythmEnd") {
       this.drawRhythmEnd();
+    } else if (this.state === "hallway") {
+      this.drawHallway();
     } else {
       this.drawGame();
     }
@@ -1089,39 +1746,59 @@ this.alien.startDance();
     ctx.fillStyle = "#101225";
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (!this.comicImage.complete || !this.comicImage.naturalWidth) {
+    if (
+      !this.comicImage.complete ||
+      !this.comicImage.naturalWidth
+    ) {
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "24px Arial";
-      ctx.fillText("Cargando cómic...", 640, 360);
-      ctx.textAlign = "start";
+
+      ctx.fillText(
+        "Cargando cómic...",
+        640,
+        360
+      );
+
       return;
     }
 
-    const frameWidth = this.comicImage.naturalWidth / 2;
-    const frameHeight = this.comicImage.naturalHeight / 2;
+    const frameWidth =
+      this.comicImage.naturalWidth / 2;
 
-    const column = this.comicIndex % 2;
-    const row = Math.floor(this.comicIndex / 2);
+    const frameHeight =
+      this.comicImage.naturalHeight / 2;
 
-    const sourceX = column * frameWidth;
-    const sourceY = row * frameHeight;
+    const column =
+      this.comicIndex % 2;
 
-    const scale = Math.min(1050 / frameWidth, 580 / frameHeight);
+    const row =
+      Math.floor(this.comicIndex / 2);
 
-    const drawWidth = frameWidth * scale;
-    const drawHeight = frameHeight * scale;
+    const scale = Math.min(
+      1050 / frameWidth,
+      580 / frameHeight
+    );
 
-    const drawX = (1280 - drawWidth) / 2;
-    const drawY = (720 - drawHeight) / 2 - 20;
+    const drawWidth =
+      frameWidth * scale;
+
+    const drawHeight =
+      frameHeight * scale;
+
+    const drawX =
+      (1280 - drawWidth) / 2;
+
+    const drawY =
+      (720 - drawHeight) / 2 - 20;
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
 
     ctx.drawImage(
       this.comicImage,
-      sourceX,
-      sourceY,
+      column * frameWidth,
+      row * frameHeight,
       frameWidth,
       frameHeight,
       drawX,
@@ -1135,123 +1812,147 @@ this.alien.startDance();
     ctx.textAlign = "center";
     ctx.fillStyle = "#a6ff00";
     ctx.font = "bold 21px Arial";
-    ctx.fillText(`${this.comicIndex + 1} / ${this.comicTotal}`, 640, 655);
+
+    ctx.fillText(
+      `${this.comicIndex + 1} / ${this.comicTotal}`,
+      640,
+      655
+    );
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "19px Arial";
+
     ctx.fillText(
-      this.comicIndex === 3 ? "HAZ CLIC PARA ENTRAR A LA SALA" : "HAZ CLIC PARA CONTINUAR",
+      this.comicIndex === 3
+        ? "HAZ CLIC PARA ENTRAR A LA SALA"
+        : "HAZ CLIC PARA CONTINUAR",
       640,
       690
     );
-
-    ctx.textAlign = "start";
   }
 
   drawDialogue() {
-    const ctx = this.context;
-
     this.drawDuelRoom();
-    this.alien.draw(ctx);
-    this.player.draw(ctx);
 
-    const dialogue = this.dialogues[this.dialogueIndex];
+    this.alien.draw(this.context);
+    this.player.draw(this.context);
+
+    const dialogue =
+      this.dialogues[this.dialogueIndex];
 
     if (!dialogue) return;
 
-    const isFreddie = dialogue.speaker === "FREDDIE";
-    const speakerColor = isFreddie ? "#a6ff00" : "#53ddff";
-
-    ctx.fillStyle = "rgba(3,2,15,0.55)";
-    ctx.fillRect(0, 0, 1280, 720);
-
-    ctx.fillStyle = "rgba(18,13,46,0.97)";
-    ctx.fillRect(75, 455, 1130, 225);
-
-    ctx.strokeStyle = speakerColor;
-    ctx.lineWidth = 5;
-    ctx.strokeRect(75, 455, 1130, 225);
-
-    ctx.fillStyle = speakerColor;
-    ctx.font = "bold 27px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(isFreddie ? "FREDDIE" : "PROTAGONISTA", 115, 505);
-
-    if (isFreddie) {
-      ctx.font = "16px Arial";
-      ctx.fillStyle = "#c8c4d8";
-      ctx.fillText("Freddielux Mercury-9000", 265, 503);
-    }
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "23px Arial";
-    this.drawWrappedText(dialogue.text, 115, 547, 1040, 31);
-
-    ctx.fillStyle = "#bbb6d6";
-    ctx.font = "16px Arial";
-    ctx.textAlign = "right";
-    ctx.fillText(`${this.dialogueIndex + 1} / ${this.dialogues.length}`, 1140, 646);
-
-    ctx.fillStyle = speakerColor;
-    ctx.font = "bold 16px Arial";
-    ctx.fillText(
-      this.dialogueIndex === this.dialogues.length - 1
+    this.drawDialogueBox(
+      dialogue.speaker,
+      dialogue.text,
+      this.dialogueIndex ===
+      this.dialogues.length - 1
         ? "CLIC PARA INICIAR EL TUTORIAL >"
-        : "CLIC PARA CONTINUAR >",
-      980,
-      646
+        : "CLIC PARA CONTINUAR >"
     );
   }
 
-  drawWrappedText(text, x, y, maxWidth, lineHeight) {
+  drawVictoryDialogue() {
+    this.drawDuelRoom();
+
+    this.alien.draw(this.context);
+    this.player.draw(this.context);
+
     const ctx = this.context;
-    const words = text.split(" ");
-    let line = "";
 
-    for (const word of words) {
-      const testLine = line ? line + " " + word : word;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#a6ff00";
+    ctx.font = "bold 44px Arial";
 
-      if (ctx.measureText(testLine).width > maxWidth && line) {
-        ctx.fillText(line, x, y);
-        line = word;
-        y += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
+    ctx.fillText(
+      "¡TUTORIAL COMPLETADO!",
+      640,
+      170
+    );
 
-    if (line) {
-      ctx.fillText(line, x, y);
-    }
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 28px Arial";
+
+    ctx.fillText(
+      `PUNTUACIÓN ${this.score}`,
+      640,
+      225
+    );
+
+    this.drawDialogueBox(
+      "FREDDIE",
+      "¡Eres muy bueno! Te dejaré pasar nada más porque rompiste la pista.",
+      "CLIC PARA CONTINUAR >"
+    );
+  }
+
+  drawHallway() {
+    this.drawHallwayBackground();
+
+    this.player.draw(this.context);
   }
 
   drawPause() {
     const ctx = this.context;
 
-    if (this.previousState === "playing") {
+    if (
+      this.previousState === "playing"
+    ) {
       this.drawGame();
-    } else if (this.previousState === "comic") {
+    } else if (
+      this.previousState === "comic"
+    ) {
       this.drawComic();
-    } else if (this.previousState === "dialogue") {
+    } else if (
+      this.previousState === "dialogue"
+    ) {
       this.drawDialogue();
-    } else if (this.previousState === "rhythm") {
+    } else if (
+      this.previousState === "victoryDialogue"
+    ) {
+      this.drawVictoryDialogue();
+    } else if (
+      this.previousState === "rhythm"
+    ) {
       this.drawRhythm();
-    } else if (this.previousState === "rhythmIntro") {
+    } else if (
+      this.previousState === "rhythmIntro"
+    ) {
       this.drawRhythmIntro();
-    } else if (this.previousState === "rhythmEnd") {
+    } else if (
+      this.previousState === "rhythmEnd"
+    ) {
       this.drawRhythmEnd();
+    } else if (
+      this.previousState === "hallway"
+    ) {
+      this.drawHallway();
     }
 
-    ctx.fillStyle = "rgba(0,0,0,0.70)";
+    ctx.fillStyle =
+      "rgba(0,0,0,0.70)";
+
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (this.pauseImage.complete && this.pauseImage.naturalWidth > 0) {
+    if (
+      this.pauseImage.complete &&
+      this.pauseImage.naturalWidth > 0
+    ) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(this.pauseImage, 0, 0, 1280, 720);
+
+      ctx.drawImage(
+        this.pauseImage,
+        0,
+        0,
+        1280,
+        720
+      );
+
       ctx.restore();
     } else {
       ctx.textAlign = "center";
+
       ctx.fillStyle = "#a6ff00";
       ctx.font = "bold 78px Arial";
       ctx.fillText("PAUSA", 640, 315);
@@ -1273,32 +1974,47 @@ this.alien.startDance();
 
   drawMenu() {
     this.drawBackground();
-    this.drawContainedImage(this.logo, {
-      x: 145,
-      y: 30,
-      width: 990,
-      height: 390
-    });
-    this.drawContainedImage(this.playImage, this.buttons.play);
-    this.drawContainedImage(this.creditsImage, this.buttons.credits);
+
+    this.drawContainedImage(
+      this.logo,
+      {
+        x: 145,
+        y: 30,
+        width: 990,
+        height: 390
+      }
+    );
+
+    this.drawContainedImage(
+      this.playImage,
+      this.buttons.play
+    );
+
+    this.drawContainedImage(
+      this.creditsImage,
+      this.buttons.credits
+    );
   }
 
   drawCredits() {
     const ctx = this.context;
 
     this.drawBackground();
-    ctx.textAlign = "center";
 
+    ctx.textAlign = "center";
     ctx.fillStyle = "#a6ff00";
     ctx.font = "bold 48px Arial";
     ctx.fillText("CREDITS", 640, 75);
 
-    this.drawContainedImage(this.studioLogo, {
-      x: 490,
-      y: 100,
-      width: 300,
-      height: 250
-    });
+    this.drawContainedImage(
+      this.studioLogo,
+      {
+        x: 490,
+        y: 100,
+        width: 300,
+        height: 250
+      }
+    );
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 27px Arial";
@@ -1306,7 +2022,11 @@ this.alien.startDance();
 
     ctx.fillStyle = "#a6ff00";
     ctx.font = "bold 20px Arial";
-    ctx.fillText("DESARROLLO DEL VIDEOJUEGO", 640, 425);
+    ctx.fillText(
+      "DESARROLLO DEL VIDEOJUEGO",
+      640,
+      425
+    );
 
     ctx.fillStyle = "#c8c4d8";
     ctx.font = "20px Arial";
@@ -1315,7 +2035,11 @@ this.alien.startDance();
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 22px Arial";
     ctx.fillText("Mariana A. Reyes", 640, 505);
-    ctx.fillText("Oscar Michel Ortega Martinez", 640, 540);
+    ctx.fillText(
+      "Oscar Michel Ortega Martinez",
+      640,
+      540
+    );
 
     ctx.fillStyle = "#a6ff00";
     ctx.font = "18px Arial";
@@ -1330,6 +2054,7 @@ this.alien.startDance();
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
     ctx.font = "20px Arial";
+
     ctx.fillText("← BACK", 35, 55);
   }
 
@@ -1341,12 +2066,45 @@ this.alien.startDance();
     this.alien.draw(ctx);
     this.player.draw(ctx);
 
-    if (this.isNear(this.player, this.alien)) {
-      ctx.textAlign = "center";
+    ctx.textAlign = "center";
+
+    if (
+      !this.tutorialCompleted &&
+      this.isNear(this.player, this.alien)
+    ) {
       ctx.fillStyle = "#ffffff";
       ctx.font = "20px Arial";
-      ctx.fillText("Presiona E para hablar con Freddie", 640, 675);
+
+      ctx.fillText(
+        "Presiona E para hablar con Freddie",
+        640,
+        675
+      );
     }
+
+    if (this.tutorialCompleted) {
+      if (this.isNearDoor()) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 22px Arial";
+
+        ctx.fillText(
+          "Presiona E para entrar al pasillo",
+          640,
+          675
+        );
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "18px Arial";
+
+        ctx.fillText(
+          "Dirígete a la puerta de cristal de la izquierda",
+          640,
+          675
+        );
+      }
+    }
+
+    ctx.textAlign = "start";
   }
 
   drawRhythmIntro() {
@@ -1374,7 +2132,11 @@ this.alien.startDance();
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "19px Arial";
-    ctx.fillText("Conoce las notas antes del duelo", 640, 150);
+    ctx.fillText(
+      "Conoce las notas antes del duelo",
+      640,
+      150
+    );
 
     const items = [
       {
@@ -1404,29 +2166,57 @@ this.alien.startDance();
     ];
 
     for (const item of items) {
-      this.drawSprite(item.image, 410, item.y, 72, "#b970ff");
+      this.drawSprite(
+        item.image,
+        410,
+        item.y,
+        72,
+        "#b970ff"
+      );
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 20px Arial";
-      ctx.fillText(item.title, 460, item.y - 6);
+
+      ctx.fillText(
+        item.title,
+        460,
+        item.y - 6
+      );
 
       ctx.font = "17px Arial";
-      ctx.fillText(item.description, 460, item.y + 20);
+
+      ctx.fillText(
+        item.description,
+        460,
+        item.y + 20
+      );
     }
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffdc69";
     ctx.font = "16px Arial";
-    ctx.fillText("3 errores seguidos = derrota", 640, 588);
+
+    ctx.fillText(
+      "3 errores seguidos = derrota",
+      640,
+      588
+    );
 
     const button = this.buttons.begin;
 
     ctx.fillStyle = "#a6ff00";
-    ctx.fillRect(button.x, button.y, button.width, button.height);
+
+    ctx.fillRect(
+      button.x,
+      button.y,
+      button.width,
+      button.height
+    );
 
     ctx.fillStyle = "#101225";
     ctx.font = "bold 25px Arial";
+
     ctx.fillText("INICIAR DUELO", 640, 656);
 
     this.drawBackButton();
@@ -1443,6 +2233,7 @@ this.alien.startDance();
     this.drawCharacters();
 
     ctx.textAlign = "center";
+
     ctx.fillStyle = "#a6ff00";
     ctx.font = "bold 33px Arial";
     ctx.fillText("TUTORIAL DE RITMO", 640, 55);
@@ -1460,19 +2251,48 @@ this.alien.startDance();
     ctx.fillText(`ERRORES ${this.misses}/3`, 1100, 210);
 
     ctx.fillStyle = "#15112e";
-    ctx.fillRect(this.trackLeft, 105, this.trackRight - this.trackLeft, 520);
+
+    ctx.fillRect(
+      this.trackLeft,
+      105,
+      this.trackRight - this.trackLeft,
+      520
+    );
 
     ctx.strokeStyle = "#8e45dc";
     ctx.lineWidth = 4;
-    ctx.strokeRect(this.trackLeft, 105, this.trackRight - this.trackLeft, 520);
 
-    const laneColors = ["#b970ff", "#32e6ff", "#55ff83", "#ff60b6"];
+    ctx.strokeRect(
+      this.trackLeft,
+      105,
+      this.trackRight - this.trackLeft,
+      520
+    );
 
-    for (let i = 0; i < this.notePositions.length; i++) {
+    const laneColors = [
+      "#b970ff",
+      "#32e6ff",
+      "#55ff83",
+      "#ff60b6"
+    ];
+
+    for (
+      let i = 0;
+      i < this.notePositions.length;
+      i++
+    ) {
       const x = this.notePositions[i];
 
-      ctx.fillStyle = i % 2 === 0 ? "rgba(100,55,170,0.10)" : "rgba(25,150,180,0.08)";
-      ctx.fillRect(x - 58, 110, 116, 510);
+      ctx.fillStyle = i % 2 === 0
+        ? "rgba(100,55,170,0.10)"
+        : "rgba(25,150,180,0.08)";
+
+      ctx.fillRect(
+        x - 58,
+        110,
+        116,
+        510
+      );
 
       ctx.strokeStyle = laneColors[i];
       ctx.globalAlpha = 0.25;
@@ -1487,6 +2307,7 @@ this.alien.startDance();
     }
 
     ctx.save();
+
     ctx.strokeStyle = "#53ddff";
     ctx.lineWidth = 6;
     ctx.shadowColor = "#53ddff";
@@ -1496,6 +2317,7 @@ this.alien.startDance();
     ctx.moveTo(this.trackLeft, this.hitY);
     ctx.lineTo(this.trackRight, this.hitY);
     ctx.stroke();
+
     ctx.restore();
 
     for (const note of this.notes) {
@@ -1527,37 +2349,72 @@ this.alien.startDance();
         size = 95;
       }
 
-      this.drawSprite(sprite, note.x, y, size, color);
+      this.drawSprite(
+        sprite,
+        note.x,
+        y,
+        size,
+        color
+      );
     }
 
     for (const effect of this.effects) {
-      const progress = 1 - effect.life / 0.5;
+      const progress =
+        1 - effect.life / 0.5;
 
       ctx.save();
-      ctx.globalAlpha = Math.max(0, effect.life / 0.5);
+
+      ctx.globalAlpha = Math.max(
+        0,
+        effect.life / 0.5
+      );
+
       ctx.strokeStyle = effect.color;
       ctx.lineWidth = 5;
 
       ctx.beginPath();
-      ctx.arc(effect.x, effect.y, 30 + progress * 70, 0, Math.PI * 2);
+
+      ctx.arc(
+        effect.x,
+        effect.y,
+        30 + progress * 70,
+        0,
+        Math.PI * 2
+      );
+
       ctx.stroke();
       ctx.restore();
     }
 
     ctx.fillStyle = "#b8edff";
     ctx.font = "17px Arial";
-    ctx.fillText("HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA", 640, 651);
+
+    ctx.fillText(
+      "HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA",
+      640,
+      651
+    );
 
     if (this.feedbackTimer > 0) {
       ctx.fillStyle = this.feedbackColor;
       ctx.font = "bold 22px Arial";
-      ctx.fillText(this.feedback, 640, 94);
+
+      ctx.fillText(
+        this.feedback,
+        640,
+        94
+      );
     }
 
     if (this.music.playbackRate !== 1) {
       ctx.fillStyle = "#ffdc69";
       ctx.font = "18px Arial";
-      ctx.fillText(`VELOCIDAD x${this.music.playbackRate.toFixed(2)}`, 1100, 270);
+
+      ctx.fillText(
+        `VELOCIDAD x${this.music.playbackRate.toFixed(2)}`,
+        1100,
+        270
+      );
     }
 
     this.drawBackButton();
@@ -1575,29 +2432,71 @@ this.alien.startDance();
 
     ctx.textAlign = "center";
 
-    const victoria = this.result === "victory";
+    const victoria =
+      this.result === "victory";
 
-    ctx.fillStyle = victoria ? "#a6ff00" : "#ff576d";
+    ctx.fillStyle = victoria
+      ? "#a6ff00"
+      : "#ff576d";
+
     ctx.font = "bold 44px Arial";
-    ctx.fillText(victoria ? "¡TUTORIAL COMPLETADO!" : "¡HAS PERDIDO!", 640, 220);
+
+    ctx.fillText(
+      victoria
+        ? "¡TUTORIAL COMPLETADO!"
+        : "¡HAS PERDIDO!",
+      640,
+      220
+    );
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 34px Arial";
-    ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 305);
+
+    ctx.fillText(
+      `PUNTUACIÓN ${this.score}`,
+      640,
+      305
+    );
 
     ctx.font = "23px Arial";
-    ctx.fillText(`Aciertos: ${this.hits}`, 640, 365);
-    ctx.fillText(`Errores consecutivos: ${this.misses}`, 640, 405);
-    ctx.fillText(`Errores totales: ${this.totalMisses}`, 640, 445);
+
+    ctx.fillText(
+      `Aciertos: ${this.hits}`,
+      640,
+      365
+    );
+
+    ctx.fillText(
+      `Errores consecutivos: ${this.misses}`,
+      640,
+      405
+    );
+
+    ctx.fillText(
+      `Errores totales: ${this.totalMisses}`,
+      640,
+      445
+    );
 
     const button = this.buttons.restart;
 
     ctx.fillStyle = "#a6ff00";
-    ctx.fillRect(button.x, button.y, button.width, button.height);
+
+    ctx.fillRect(
+      button.x,
+      button.y,
+      button.width,
+      button.height
+    );
 
     ctx.fillStyle = "#101225";
     ctx.font = "bold 25px Arial";
-    ctx.fillText("VOLVER A JUGAR", 640, 540);
+
+    ctx.fillText(
+      "VOLVER A JUGAR",
+      640,
+      540
+    );
 
     this.drawBackButton();
   }
