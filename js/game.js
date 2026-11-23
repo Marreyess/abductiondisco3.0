@@ -16,17 +16,49 @@ export class Game {
     this.duelRoom = this.loadImage("./assets/sala-duelo.jpeg");
     this.pauseImage = this.loadImage("./assets/pause.png");
     this.comicImage = this.loadImage("./assets/Comic_Inicio.png");
+
     this.hallwayImage = this.loadImage("./assets/Pasillo01.png");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
+    this.elvisSprite = this.loadImage("./assets/Alien/Elvis3.png");
+
+    this.elvisDanceSprites = [];
+
+    for (let i = 1; i <= 7; i++) {
+      this.elvisDanceSprites.push(
+        this.loadImage(`./assets/Alien/baile elvis ${i}.png`)
+      );
+    }
+
+    this.elvisDanceFrame = 0;
+    this.elvisDanceTimer = 0;
+    this.elvisDanceFrameDuration = 0.16;
 
     this.normalSprite = this.loadImage("./assets/Notas/normal02.png");
     this.doubleSprite = this.loadImage("./assets/Notas/dobleClic02.png");
     this.starSprite = this.loadImage("./assets/Notas/star01.png");
     this.crossoutSprite = this.loadImage("./assets/Notas/crossout01.png");
 
-    this.playerStart = { x: 390, y: 430 };
-    this.player = new Player(390, 430);
+    this.playerStart = {
+      x: 390,
+      y: 430
+    };
+
+    this.player = new Player(
+      this.playerStart.x,
+      this.playerStart.y
+    );
+
     this.alien = new Enemy(260, 410, "Freddie");
+
+    this.elvisPosition = {
+      x: 250,
+      y: 380,
+      width: 205,
+      height: 260
+    };
+
+    this.elvisDefeated = false;
+    this.battleMode = "tutorial";
 
     this.state = "menu";
     this.previousState = null;
@@ -96,32 +128,12 @@ export class Game {
       { x: 0, y: 720 }
     ];
 
-     this.investigationBlockedAreas = [
-  {
-    x: 145,
-    y: 135,
-    width: 205,
-    height: 455
-  },
-  {
-    x: 350,
-    y: 200,
-    width: 790,
-    height: 385
-  },
-  {
-    x: 0,
-    y: 0,
-    width: 145,
-    height: 625
-  },
-  {
-    x: 1140,
-    y: 0,
-    width: 140,
-    height: 625
-  }
-];
+    this.investigationBlockedAreas = [
+      { x: 145, y: 135, width: 205, height: 455 },
+      { x: 350, y: 200, width: 790, height: 385 },
+      { x: 0, y: 0, width: 145, height: 625 },
+      { x: 1140, y: 0, width: 140, height: 625 }
+    ];
 
     this.dialogues = [
       {
@@ -272,13 +284,48 @@ export class Game {
     this.backgroundVideo.play().catch(() => {});
 
     this.buttons = {
-      play: { x: 490, y: 450, width: 300, height: 100 },
-      credits: { x: 490, y: 560, width: 300, height: 75 },
-      back: { x: 35, y: 28, width: 115, height: 42 },
-      begin: { x: 475, y: 615, width: 330, height: 65 },
-      restart: { x: 470, y: 495, width: 340, height: 75 },
-      pauseContinue: { x: 475, y: 443, width: 307, height: 67 },
-      pauseExit: { x: 475, y: 520, width: 307, height: 66 }
+      play: {
+        x: 490,
+        y: 450,
+        width: 300,
+        height: 100
+      },
+      credits: {
+        x: 490,
+        y: 560,
+        width: 300,
+        height: 75
+      },
+      back: {
+        x: 35,
+        y: 28,
+        width: 115,
+        height: 42
+      },
+      begin: {
+        x: 475,
+        y: 615,
+        width: 330,
+        height: 65
+      },
+      restart: {
+        x: 470,
+        y: 495,
+        width: 340,
+        height: 75
+      },
+      pauseContinue: {
+        x: 475,
+        y: 443,
+        width: 307,
+        height: 67
+      },
+      pauseExit: {
+        x: 475,
+        y: 520,
+        width: 307,
+        height: 66
+      }
     };
 
     this.music = new Audio("./assets/Music_Puffs.wav");
@@ -304,11 +351,20 @@ export class Game {
     this.hitY = 565;
 
     this.noteSpeed = 240;
+    this.elvisNoteSpeed = 315;
+
     this.hitWindow = 0.2;
     this.perfectWindow = 0.075;
-    this.notePositions = [440, 560, 680, 800];
+
+    this.notePositions = [
+      440,
+      560,
+      680,
+      800
+    ];
 
     this.maxErrors = 3;
+
     this.notes = [];
     this.effects = [];
 
@@ -330,11 +386,14 @@ export class Game {
     this.speedEffectUntil = 0;
     this.result = "";
 
-    this.rhythm = { slider: null };
+    this.rhythm = {
+      slider: null
+    };
 
     window.addEventListener("keydown", event => {
       if (event.key === "Escape") {
         event.preventDefault();
+
         if (event.repeat) return;
 
         if (this.state === "paused") {
@@ -354,33 +413,54 @@ export class Game {
         ) {
           this.pauseGame();
         }
+
         return;
       }
 
       if (
         this.state === "dialogue" &&
-        (event.key === "Enter" || event.code === "Space")
+        (
+          event.key === "Enter" ||
+          event.code === "Space"
+        )
       ) {
         event.preventDefault();
-        if (!event.repeat) this.nextDialogue();
+
+        if (!event.repeat) {
+          this.nextDialogue();
+        }
+
         return;
       }
 
       if (
         this.state === "victoryDialogue" &&
-        (event.key === "Enter" || event.code === "Space")
+        (
+          event.key === "Enter" ||
+          event.code === "Space"
+        )
       ) {
         event.preventDefault();
-        if (!event.repeat) this.finishVictoryDialogue();
+
+        if (!event.repeat) {
+          this.finishVictoryDialogue();
+        }
+
         return;
       }
 
       if (
         this.state === "rhythmIntro" &&
-        (event.key === "Enter" || event.code === "Space")
+        (
+          event.key === "Enter" ||
+          event.code === "Space"
+        )
       ) {
         event.preventDefault();
-        if (!event.repeat) this.beginRhythm();
+
+        if (!event.repeat) {
+          this.beginRhythm();
+        }
       }
     });
   }
@@ -393,8 +473,10 @@ export class Game {
 
   start() {
     if (this.started) return;
+
     this.started = true;
     this.lastTime = performance.now();
+
     requestAnimationFrame(this.loop);
   }
 
@@ -419,16 +501,47 @@ export class Game {
     }
 
     if (this.state === "rhythm") {
-      if (typeof this.alien.update === "function") {
+      if (
+        this.battleMode === "tutorial" &&
+        typeof this.alien.update === "function"
+      ) {
         this.alien.update(deltaTime);
+      }
+
+      if (this.battleMode === "elvis") {
+        this.updateElvisDance(deltaTime);
       }
 
       this.updateRhythm(deltaTime);
     }
 
     this.draw();
+
     requestAnimationFrame(this.loop);
   };
+
+  updateElvisDance(deltaTime) {
+    if (
+      this.state !== "rhythm" ||
+      this.battleMode !== "elvis"
+    ) {
+      return;
+    }
+
+    this.elvisDanceTimer += deltaTime;
+
+    while (
+      this.elvisDanceTimer >=
+      this.elvisDanceFrameDuration
+    ) {
+      this.elvisDanceTimer -=
+        this.elvisDanceFrameDuration;
+
+      this.elvisDanceFrame =
+        (this.elvisDanceFrame + 1) %
+        this.elvisDanceSprites.length;
+    }
+  }
 
   isInside(x, y, button) {
     return (
@@ -456,6 +569,7 @@ export class Game {
 
   resetGame() {
     this.musicAttempt++;
+
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -465,19 +579,28 @@ export class Game {
       console.warn(error);
     }
 
-    if (typeof this.alien.stopDance === "function") {
+    if (
+      typeof this.alien.stopDance === "function"
+    ) {
       this.alien.stopDance();
     }
 
     this.resetPlayerPosition();
 
     this.tutorialCompleted = false;
+    this.elvisDefeated = false;
+    this.battleMode = "tutorial";
+
+    this.elvisDanceFrame = 0;
+    this.elvisDanceTimer = 0;
+
     this.comicIndex = 0;
     this.dialogueIndex = 0;
 
     this.score = 0;
     this.combo = 0;
     this.bestCombo = 0;
+
     this.hits = 0;
     this.misses = 0;
     this.totalMisses = 0;
@@ -501,39 +624,65 @@ export class Game {
     this.videoWasPlaying = false;
     this.musicWasPlaying = false;
 
-    this.wasInteracting = this.player.wantsToInteract();
+    this.wasInteracting =
+      this.player.wantsToInteract();
+
     this.lastTime = performance.now();
   }
 
   handleClick(x, y, detail = 1) {
     if (this.state === "paused") {
-      if (this.isInside(x, y, this.buttons.pauseContinue)) {
+      if (
+        this.isInside(
+          x,
+          y,
+          this.buttons.pauseContinue
+        )
+      ) {
         this.resumeGame();
-      } else if (this.isInside(x, y, this.buttons.pauseExit)) {
+      } else if (
+        this.isInside(
+          x,
+          y,
+          this.buttons.pauseExit
+        )
+      ) {
         this.exitPause();
       }
+
       return;
     }
 
     if (this.state === "menu") {
-      if (this.isInside(x, y, this.buttons.play)) {
+      if (
+        this.isInside(x, y, this.buttons.play)
+      ) {
         this.resetGame();
         this.state = "comic";
-      } else if (this.isInside(x, y, this.buttons.credits)) {
+      } else if (
+        this.isInside(x, y, this.buttons.credits)
+      ) {
         this.state = "credits";
       }
+
       return;
     }
 
     if (this.state === "comic") {
       this.comicIndex++;
 
-      if (this.comicIndex >= this.comicTotal) {
+      if (
+        this.comicIndex >= this.comicTotal
+      ) {
         this.comicIndex = 0;
         this.resetPlayerPosition();
+
         this.state = "playing";
-        this.wasInteracting = this.player.wantsToInteract();
+
+        this.wasInteracting =
+          this.player.wantsToInteract();
       }
+
       return;
     }
 
@@ -548,32 +697,47 @@ export class Game {
     }
 
     if (this.state === "credits") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.state = "menu";
       }
+
       return;
     }
 
     if (this.state === "rhythmIntro") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.exitRhythm();
-      } else if (this.isInside(x, y, this.buttons.begin)) {
+      } else if (
+        this.isInside(x, y, this.buttons.begin)
+      ) {
         this.beginRhythm();
       }
+
       return;
     }
 
     if (this.state === "rhythmEnd") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.exitRhythm();
-      } else if (this.isInside(x, y, this.buttons.restart)) {
-        this.startRhythm();
+      } else if (
+        this.isInside(x, y, this.buttons.restart)
+      ) {
+        this.startRhythm(this.battleMode);
       }
+
       return;
     }
 
     if (this.state === "rhythm") {
-      if (this.isInside(x, y, this.buttons.back)) {
+      if (
+        this.isInside(x, y, this.buttons.back)
+      ) {
         this.exitRhythm();
       } else {
         this.hitNote(x, y, detail);
@@ -588,10 +752,17 @@ export class Game {
       (x, y) => this.isPositionAllowed(x, y)
     );
 
-    const interacting = this.player.wantsToInteract();
+    const interacting =
+      this.player.wantsToInteract();
 
-    if (interacting && !this.wasInteracting) {
-      if (this.tutorialCompleted && this.isNearDoor()) {
+    if (
+      interacting &&
+      !this.wasInteracting
+    ) {
+      if (
+        this.tutorialCompleted &&
+        this.isNearDoor()
+      ) {
         this.enterHallway();
         return;
       }
@@ -613,7 +784,9 @@ export class Game {
       deltaTime,
       this.canvas,
       (x, y) => {
-        const feet = this.player.getFootPosition(x, y);
+        const feet =
+          this.player.getFootPosition(x, y);
+
         return this.isPointInsidePolygon(
           feet,
           this.hallwayWalkableArea
@@ -621,7 +794,8 @@ export class Game {
       }
     );
 
-    const interacting = this.player.wantsToInteract();
+    const interacting =
+      this.player.wantsToInteract();
 
     if (
       interacting &&
@@ -639,10 +813,23 @@ export class Game {
     this.player.update(
       deltaTime,
       this.canvas,
-      (x, y) => this.isInvestigationPositionAllowed(x, y)
+      (x, y) =>
+        this.isInvestigationPositionAllowed(x, y)
     );
 
-    this.wasInteracting = this.player.wantsToInteract();
+    const interacting =
+      this.player.wantsToInteract();
+
+    if (
+      interacting &&
+      !this.wasInteracting &&
+      this.isNearElvis()
+    ) {
+      this.startRhythm("elvis");
+      return;
+    }
+
+    this.wasInteracting = interacting;
   }
 
   isNearDoor() {
@@ -669,6 +856,26 @@ export class Game {
     ) <= this.hallwayLeftDoor.radius;
   }
 
+  isNearElvis() {
+    const feet = this.player.getFootPosition(
+      this.player.x,
+      this.player.y
+    );
+
+    const elvisX =
+      this.elvisPosition.x +
+      this.elvisPosition.width / 2;
+
+    const elvisY =
+      this.elvisPosition.y +
+      this.elvisPosition.height;
+
+    return Math.hypot(
+      feet.x - elvisX,
+      feet.y - elvisY
+    ) <= 145;
+  }
+
   enterHallway() {
     if (!this.tutorialCompleted) return;
 
@@ -678,7 +885,9 @@ export class Game {
     );
 
     this.state = "hallway";
-    this.wasInteracting = this.player.wantsToInteract();
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   enterInvestigationRoom() {
@@ -688,7 +897,9 @@ export class Game {
     );
 
     this.state = "investigation";
-    this.wasInteracting = this.player.wantsToInteract();
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   startDialogue() {
@@ -702,23 +913,38 @@ export class Game {
 
     this.dialogueIndex++;
 
-    if (this.dialogueIndex >= this.dialogues.length) {
+    if (
+      this.dialogueIndex >=
+      this.dialogues.length
+    ) {
       this.dialogueIndex = 0;
-      this.startRhythm();
+      this.startRhythm("tutorial");
     }
   }
 
   finishVictoryDialogue() {
-    if (this.state !== "victoryDialogue") return;
+    if (
+      this.state !== "victoryDialogue"
+    ) {
+      return;
+    }
 
     this.state = "playing";
-    this.wasInteracting = this.player.wantsToInteract();
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   isPositionAllowed(x, y) {
-    const feet = this.player.getFootPosition(x, y);
+    const feet =
+      this.player.getFootPosition(x, y);
 
-    if (!this.isPointInsidePolygon(feet, this.walkableArea)) {
+    if (
+      !this.isPointInsidePolygon(
+        feet,
+        this.walkableArea
+      )
+    ) {
       return false;
     }
 
@@ -737,7 +963,8 @@ export class Game {
   }
 
   isInvestigationPositionAllowed(x, y) {
-    const feet = this.player.getFootPosition(x, y);
+    const feet =
+      this.player.getFootPosition(x, y);
 
     if (
       !this.isPointInsidePolygon(
@@ -748,7 +975,9 @@ export class Game {
       return false;
     }
 
-    for (const area of this.investigationBlockedAreas) {
+    for (
+      const area of this.investigationBlockedAreas
+    ) {
       if (
         feet.x >= area.x &&
         feet.x <= area.x + area.width &&
@@ -774,32 +1003,49 @@ export class Game {
       const b = polygon[j];
 
       const intersects =
-        (a.y > point.y) !== (b.y > point.y) &&
+        (a.y > point.y) !==
+          (b.y > point.y) &&
         point.x <
           ((b.x - a.x) * (point.y - a.y)) /
           (b.y - a.y) + a.x;
 
-      if (intersects) inside = !inside;
+      if (intersects) {
+        inside = !inside;
+      }
     }
 
     return inside;
   }
 
   isNear(player, target) {
-    const px = player.x + player.width / 2;
-    const py = player.y + player.height / 2;
-    const tx = target.x + target.width / 2;
-    const ty = target.y + target.height / 2;
+    const px =
+      player.x + player.width / 2;
 
-    return Math.hypot(px - tx, py - ty) < 120;
+    const py =
+      player.y + player.height / 2;
+
+    const tx =
+      target.x + target.width / 2;
+
+    const ty =
+      target.y + target.height / 2;
+
+    return Math.hypot(
+      px - tx,
+      py - ty
+    ) < 120;
   }
 
   pauseGame() {
     if (this.state === "paused") return;
 
     this.previousState = this.state;
-    this.videoWasPlaying = !this.backgroundVideo.paused;
-    this.musicWasPlaying = !this.music.paused;
+
+    this.videoWasPlaying =
+      !this.backgroundVideo.paused;
+
+    this.musicWasPlaying =
+      !this.music.paused;
 
     this.backgroundVideo.pause();
     this.music.pause();
@@ -810,14 +1056,21 @@ export class Game {
   resumeGame() {
     if (this.state !== "paused") return;
 
-    this.state = this.previousState || "playing";
+    this.state =
+      this.previousState || "playing";
+
     this.previousState = null;
 
     if (this.videoWasPlaying) {
-      this.backgroundVideo.play().catch(() => {});
+      this.backgroundVideo
+        .play()
+        .catch(() => {});
     }
 
-    if (this.musicWasPlaying && this.state === "rhythm") {
+    if (
+      this.musicWasPlaying &&
+      this.state === "rhythm"
+    ) {
       this.music.play().catch(error => {
         console.warn(error);
         this.musicError = true;
@@ -826,65 +1079,120 @@ export class Game {
 
     this.videoWasPlaying = false;
     this.musicWasPlaying = false;
+
     this.lastTime = performance.now();
-    this.wasInteracting = this.player.wantsToInteract();
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   exitPause() {
     if (this.state !== "paused") return;
 
     this.resetGame();
-    this.backgroundVideo.play().catch(() => {});
+
+    this.backgroundVideo
+      .play()
+      .catch(() => {});
+
     this.state = "menu";
   }
 
   randomType() {
     const number = Math.random();
 
-    if (number < 0.58) return "circle";
-    if (number < 0.8) return "double";
+    if (number < 0.58) {
+      return "circle";
+    }
+
+    if (number < 0.8) {
+      return "double";
+    }
+
     return "crossout";
   }
 
   buildChart() {
     const duration = this.music.duration;
+    const isElvis =
+      this.battleMode === "elvis";
 
-    let total = 24;
-    let interval = 0.85;
+    let total = isElvis ? 36 : 24;
+    let interval = isElvis ? 0.65 : 0.85;
     let first = 3;
 
-    if (Number.isFinite(duration) && duration > 0) {
-      first = Math.min(3, Math.max(0.5, duration * 0.15));
-
-      interval = Math.min(
-        1.1,
-        Math.max(0.38, (duration - first - 0.8) / 25)
+    if (
+      Number.isFinite(duration) &&
+      duration > 0
+    ) {
+      first = Math.min(
+        3,
+        Math.max(0.5, duration * 0.15)
       );
 
-      total = Math.max(
-        1,
-        Math.min(
-          24,
-          Math.floor((duration - first - 0.4) / interval)
-        )
-      );
+      if (isElvis) {
+        interval = Math.min(
+          0.78,
+          Math.max(
+            0.56,
+            (duration - first - 0.8) / 36
+          )
+        );
+
+        total = Math.max(
+          1,
+          Math.min(
+            36,
+            Math.floor(
+              (duration - first - 0.4) /
+              interval
+            )
+          )
+        );
+      } else {
+        interval = Math.min(
+          1.1,
+          Math.max(
+            0.38,
+            (duration - first - 0.8) / 25
+          )
+        );
+
+        total = Math.max(
+          1,
+          Math.min(
+            24,
+            Math.floor(
+              (duration - first - 0.4) /
+              interval
+            )
+          )
+        );
+      }
     }
 
     const starIndex = total >= 8
-      ? Math.floor(total * (0.35 + Math.random() * 0.3))
+      ? Math.floor(
+          total *
+          (0.35 + Math.random() * 0.3)
+        )
       : -1;
 
     this.notes = [];
+
     let previousLane = -1;
 
     for (let i = 0; i < total; i++) {
       let lane = Math.floor(
-        Math.random() * this.notePositions.length
+        Math.random() *
+        this.notePositions.length
       );
 
       if (lane === previousLane) {
         lane = (
-          lane + 1 + Math.floor(Math.random() * 3)
+          lane +
+          1 +
+          Math.floor(Math.random() * 3)
         ) % this.notePositions.length;
       }
 
@@ -893,7 +1201,9 @@ export class Game {
       this.notes.push({
         id: i,
         x: this.notePositions[lane],
-        type: i === starIndex ? "star" : this.randomType(),
+        type: i === starIndex
+          ? "star"
+          : this.randomType(),
         time: first + i * interval,
         status: "pending",
         firstClickTime: null
@@ -901,8 +1211,11 @@ export class Game {
     }
   }
 
-  startRhythm() {
+  startRhythm(mode = "tutorial") {
+    this.battleMode = mode;
+
     this.musicAttempt++;
+
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -912,15 +1225,28 @@ export class Game {
       console.warn(error);
     }
 
-    if (typeof this.alien.stopDance === "function") {
+    if (
+      typeof this.alien.stopDance ===
+      "function"
+    ) {
       this.alien.stopDance();
     }
 
+    this.elvisDanceFrame = 0;
+    this.elvisDanceTimer = 0;
+
     this.state = "rhythmIntro";
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   beginRhythm() {
-    if (this.state !== "rhythmIntro") return;
+    if (
+      this.state !== "rhythmIntro"
+    ) {
+      return;
+    }
 
     this.musicAttempt++;
     const attemptId = this.musicAttempt;
@@ -928,6 +1254,7 @@ export class Game {
     this.score = 0;
     this.combo = 0;
     this.bestCombo = 0;
+
     this.hits = 0;
     this.misses = 0;
     this.totalMisses = 0;
@@ -936,6 +1263,9 @@ export class Game {
     this.rhythmTime = 0;
     this.fallbackTime = 0;
     this.effects = [];
+
+    this.elvisDanceFrame = 0;
+    this.elvisDanceTimer = 0;
 
     this.feedback = "¡PREPÁRATE!";
     this.feedbackColor = "#a6ff00";
@@ -957,34 +1287,50 @@ export class Game {
     this.audioStarted = false;
 
     this.buildChart();
+
     this.state = "rhythm";
 
-    if (typeof this.alien.startDance === "function") {
+    if (
+      this.battleMode === "tutorial" &&
+      typeof this.alien.startDance ===
+        "function"
+    ) {
       this.alien.startDance();
     }
 
-    this.music.play().then(() => {
-      if (attemptId !== this.musicAttempt) return;
+    this.music.play()
+      .then(() => {
+        if (
+          attemptId !== this.musicAttempt
+        ) {
+          return;
+        }
 
-      this.audioStarted = true;
+        this.audioStarted = true;
 
-      if (this.state === "paused") {
-        this.music.pause();
-        this.musicWasPlaying = true;
-      }
-    }).catch(error => {
-      if (attemptId !== this.musicAttempt) return;
+        if (this.state === "paused") {
+          this.music.pause();
+          this.musicWasPlaying = true;
+        }
+      })
+      .catch(error => {
+        if (
+          attemptId !== this.musicAttempt
+        ) {
+          return;
+        }
 
-      console.warn(error);
+        console.warn(error);
 
-      if (this.state === "rhythm") {
-        this.musicError = true;
-        this.showFeedback(
-          "MODO PRÁCTICA SIN AUDIO",
-          "#ffdc69"
-        );
-      }
-    });
+        if (this.state === "rhythm") {
+          this.musicError = true;
+
+          this.showFeedback(
+            "MODO PRÁCTICA SIN AUDIO",
+            "#ffdc69"
+          );
+        }
+      });
   }
 
   getRhythmTime(deltaTime) {
@@ -994,15 +1340,20 @@ export class Game {
       this.music.readyState >= 2
     ) {
       this.audioStarted = true;
+
       return this.music.currentTime;
     }
 
-    if (this.audioStarted && !this.musicError) {
+    if (
+      this.audioStarted &&
+      !this.musicError
+    ) {
       return this.rhythmTime;
     }
 
     if (this.musicError) {
       this.fallbackTime += deltaTime;
+
       return this.fallbackTime;
     }
 
@@ -1010,7 +1361,8 @@ export class Game {
   }
 
   updateRhythm(deltaTime) {
-    this.rhythmTime = this.getRhythmTime(deltaTime);
+    this.rhythmTime =
+      this.getRhythmTime(deltaTime);
 
     this.feedbackTimer = Math.max(
       0,
@@ -1027,27 +1379,43 @@ export class Game {
 
     if (
       this.speedEffectUntil > 0 &&
-      this.rhythmTime >= this.speedEffectUntil
+      this.rhythmTime >=
+        this.speedEffectUntil
     ) {
       this.music.playbackRate = 1;
       this.speedEffectUntil = 0;
     }
 
     for (const note of this.notes) {
-      if (note.status !== "pending") continue;
+      if (
+        note.status !== "pending"
+      ) {
+        continue;
+      }
 
-      if (this.rhythmTime > note.time + this.hitWindow) {
-        if (note.type === "crossout") {
+      if (
+        this.rhythmTime >
+        note.time + this.hitWindow
+      ) {
+        if (
+          note.type === "crossout"
+        ) {
           note.status = "avoided";
           this.avoidedTraps++;
-        } else if (note.type === "star") {
+        } else if (
+          note.type === "star"
+        ) {
           note.status = "skipped";
         } else {
           note.status = "missed";
           this.registerMiss();
         }
 
-        if (this.state !== "rhythm") return;
+        if (
+          this.state !== "rhythm"
+        ) {
+          return;
+        }
       }
     }
 
@@ -1055,28 +1423,51 @@ export class Game {
   }
 
   getNoteY(note) {
+    const speed =
+      this.battleMode === "elvis"
+        ? this.elvisNoteSpeed
+        : this.noteSpeed;
+
     return this.hitY -
-      (note.time - this.rhythmTime) * this.noteSpeed;
+      (note.time - this.rhythmTime) *
+      speed;
   }
 
   getHittableNote(x) {
     let candidate = null;
     let bestDistance = Infinity;
 
-    for (const note of this.notes) {
-      if (note.status !== "pending") continue;
+    const speed =
+      this.battleMode === "elvis"
+        ? this.elvisNoteSpeed
+        : this.noteSpeed;
 
-      const difference = Math.abs(this.rhythmTime - note.time);
-      const distanceX = Math.abs(x - note.x);
+    for (const note of this.notes) {
+      if (
+        note.status !== "pending"
+      ) {
+        continue;
+      }
+
+      const difference = Math.abs(
+        this.rhythmTime - note.time
+      );
+
+      const distanceX = Math.abs(
+        x - note.x
+      );
 
       if (
         difference <= this.hitWindow &&
         distanceX <= 55
       ) {
-        const distance = difference * this.noteSpeed +
+        const distance =
+          difference * speed +
           distanceX * 0.15;
 
-        if (distance < bestDistance) {
+        if (
+          distance < bestDistance
+        ) {
           candidate = note;
           bestDistance = distance;
         }
@@ -1087,28 +1478,46 @@ export class Game {
   }
 
   hitNote(x, y, detail = 1) {
-    if (Math.abs(y - this.hitY) > 55) return;
+    if (
+      Math.abs(y - this.hitY) > 55
+    ) {
+      return;
+    }
 
     const note = this.getHittableNote(x);
 
     if (!note) {
-      this.showFeedback("FUERA DE TIEMPO", "#ff647a");
+      this.showFeedback(
+        "FUERA DE TIEMPO",
+        "#ff647a"
+      );
+
       return;
     }
 
-    if (note.type === "crossout") {
+    if (
+      note.type === "crossout"
+    ) {
       note.status = "trapHit";
+
       this.registerMiss();
 
-      if (this.state === "rhythm") {
-        this.showFeedback("¡NO TOQUES LA EQUIS!", "#ff576d");
+      if (
+        this.state === "rhythm"
+      ) {
+        this.showFeedback(
+          "¡NO TOQUES LA EQUIS!",
+          "#ff576d"
+        );
       }
 
       this.checkRhythmEnd();
       return;
     }
 
-    if (note.type === "double") {
+    if (
+      note.type === "double"
+    ) {
       const now = performance.now();
 
       if (
@@ -1116,27 +1525,42 @@ export class Game {
         now - note.firstClickTime > 350
       ) {
         note.firstClickTime = now;
-        this.showFeedback("¡SEGUNDO CLIC!", "#ffdc69");
+
+        this.showFeedback(
+          "¡SEGUNDO CLIC!",
+          "#ffdc69"
+        );
+
         return;
       }
     }
 
     note.status = "hit";
 
-    const difference = Math.abs(this.rhythmTime - note.time);
+    const difference = Math.abs(
+      this.rhythmTime - note.time
+    );
 
-    let points = difference <= this.perfectWindow
-      ? 150
-      : 100;
+    let points =
+      difference <= this.perfectWindow
+        ? 150
+        : 100;
 
-    if (note.type === "double") {
+    if (
+      note.type === "double"
+    ) {
       points = 200;
     }
 
-    if (note.type === "star") {
+    if (
+      note.type === "star"
+    ) {
       points = 300;
+
       this.music.playbackRate = 0.5;
-      this.speedEffectUntil = this.rhythmTime + 3;
+
+      this.speedEffectUntil =
+        this.rhythmTime + 3;
     }
 
     this.registerHit(points);
@@ -1147,10 +1571,17 @@ export class Game {
         : note.type === "double"
           ? "¡DOBLE CLIC!"
           : "¡PERFECT!",
-      note.type === "star" ? "#ffdc69" : "#a6ff00"
+      note.type === "star"
+        ? "#ffdc69"
+        : "#a6ff00"
     );
 
-    this.addEffect(note.x, this.hitY, "#53ddff");
+    this.addEffect(
+      note.x,
+      this.hitY,
+      "#53ddff"
+    );
+
     this.checkRhythmEnd();
   }
 
@@ -1163,7 +1594,10 @@ export class Game {
       this.combo
     );
 
-    this.score += points + Math.min(this.combo * 5, 100);
+    this.score +=
+      points +
+      Math.min(this.combo * 5, 100);
+
     this.misses = 0;
   }
 
@@ -1177,7 +1611,9 @@ export class Game {
       "#ff576d"
     );
 
-    if (this.misses >= this.maxErrors) {
+    if (
+      this.misses >= this.maxErrors
+    ) {
       this.endRhythm(false);
     }
   }
@@ -1198,52 +1634,92 @@ export class Game {
   }
 
   checkRhythmEnd() {
-    if (this.state !== "rhythm") return;
+    if (
+      this.state !== "rhythm"
+    ) {
+      return;
+    }
 
     if (
       this.notes.length > 0 &&
-      this.notes.every(note => note.status !== "pending")
+      this.notes.every(
+        note => note.status !== "pending"
+      )
     ) {
       this.endRhythm(true);
     }
   }
 
   finishRemainingNotes() {
-    if (this.state !== "rhythm") return;
+    if (
+      this.state !== "rhythm"
+    ) {
+      return;
+    }
 
     for (const note of this.notes) {
-      if (note.status !== "pending") continue;
+      if (
+        note.status !== "pending"
+      ) {
+        continue;
+      }
 
-      if (note.type === "crossout") {
+      if (
+        note.type === "crossout"
+      ) {
         note.status = "avoided";
         this.avoidedTraps++;
-      } else if (note.type === "star") {
+      } else if (
+        note.type === "star"
+      ) {
         note.status = "skipped";
       } else {
         note.status = "missed";
         this.registerMiss();
       }
 
-      if (this.state !== "rhythm") return;
+      if (
+        this.state !== "rhythm"
+      ) {
+        return;
+      }
     }
 
     this.checkRhythmEnd();
   }
 
   endRhythm(won) {
-    if (this.state !== "rhythm") return;
+    if (
+      this.state !== "rhythm"
+    ) {
+      return;
+    }
 
     this.musicAttempt++;
+
     this.music.pause();
     this.music.playbackRate = 1;
 
-    if (typeof this.alien.stopDance === "function") {
+    if (
+      typeof this.alien.stopDance ===
+      "function"
+    ) {
       this.alien.stopDance();
     }
 
-    this.result = won ? "victory" : "defeat";
+    this.result = won
+      ? "victory"
+      : "defeat";
 
-    if (won) {
+    if (
+      this.battleMode === "elvis"
+    ) {
+      if (won) {
+        this.elvisDefeated = true;
+      }
+
+      this.state = "rhythmEnd";
+    } else if (won) {
       this.tutorialCompleted = true;
       this.state = "victoryDialogue";
     } else {
@@ -1253,6 +1729,7 @@ export class Game {
 
   exitRhythm() {
     this.musicAttempt++;
+
     this.music.pause();
     this.music.playbackRate = 1;
 
@@ -1262,12 +1739,20 @@ export class Game {
       console.warn(error);
     }
 
-    if (typeof this.alien.stopDance === "function") {
+    if (
+      typeof this.alien.stopDance ===
+      "function"
+    ) {
       this.alien.stopDance();
     }
 
-    this.state = "playing";
-    this.wasInteracting = this.player.wantsToInteract();
+    this.state =
+      this.battleMode === "elvis"
+        ? "investigation"
+        : "playing";
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
   }
 
   startSliderAt(x, y) {
@@ -1284,10 +1769,22 @@ export class Game {
     ctx.fillStyle = "#080b23";
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (image.complete && image.naturalWidth > 0) {
+    if (
+      image &&
+      image.complete &&
+      image.naturalWidth > 0
+    ) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(image, 0, 0, 1280, 720);
+
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        1280,
+        720
+      );
+
       ctx.restore();
     }
   }
@@ -1298,47 +1795,102 @@ export class Game {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, 1280, 720);
 
-    if (this.backgroundVideo.readyState >= 2) {
-      ctx.drawImage(this.backgroundVideo, 0, 0, 1280, 720);
+    if (
+      this.backgroundVideo.readyState >= 2
+    ) {
+      ctx.drawImage(
+        this.backgroundVideo,
+        0,
+        0,
+        1280,
+        720
+      );
     }
 
-    ctx.fillStyle = "rgba(5,3,18,0.42)";
-    ctx.fillRect(0, 0, 1280, 720);
+    ctx.fillStyle =
+      "rgba(5,3,18,0.42)";
+
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
   }
 
   drawDuelRoom() {
-    this.drawImageBackground(this.duelRoom);
+    this.drawImageBackground(
+      this.duelRoom
+    );
   }
 
   drawHallwayBackground() {
-    this.drawImageBackground(this.hallwayImage);
+    this.drawImageBackground(
+      this.hallwayImage
+    );
   }
 
   drawInvestigationBackground() {
-    this.drawImageBackground(this.investigationRoom);
+    this.drawImageBackground(
+      this.investigationRoom
+    );
+  }
+
+  drawRhythmBackground() {
+    if (
+      this.battleMode === "elvis"
+    ) {
+      this.drawInvestigationBackground();
+    } else {
+      this.drawDuelRoom();
+    }
   }
 
   drawContainedImage(image, area) {
-    if (!image.complete || !image.naturalWidth) return;
+    if (
+      !image ||
+      !image.complete ||
+      !image.naturalWidth
+    ) {
+      return;
+    }
 
     const scale = Math.min(
       area.width / image.naturalWidth,
       area.height / image.naturalHeight
     );
 
-    const width = image.naturalWidth * scale;
-    const height = image.naturalHeight * scale;
+    const width =
+      image.naturalWidth * scale;
 
-    const x = area.x + (area.width - width) / 2;
-    const y = area.y + (area.height - height) / 2;
+    const height =
+      image.naturalHeight * scale;
 
-    this.context.drawImage(image, x, y, width, height);
+    const x =
+      area.x +
+      (area.width - width) / 2;
+
+    const y =
+      area.y +
+      (area.height - height) / 2;
+
+    this.context.drawImage(
+      image,
+      x,
+      y,
+      width,
+      height
+    );
   }
 
   drawSprite(image, x, y, size, color) {
     const ctx = this.context;
 
-    if (image && image.complete && image.naturalWidth > 0) {
+    if (
+      image &&
+      image.complete &&
+      image.naturalWidth > 0
+    ) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
 
@@ -1353,12 +1905,72 @@ export class Game {
       ctx.restore();
     } else {
       ctx.save();
+
       ctx.fillStyle = color;
+
       ctx.beginPath();
-      ctx.arc(x, y, size * 0.34, 0, Math.PI * 2);
+      ctx.arc(
+        x,
+        y,
+        size * 0.34,
+        0,
+        Math.PI * 2
+      );
+
       ctx.fill();
       ctx.restore();
     }
+  }
+
+  drawElvis(x, y, width, height) {
+    const ctx = this.context;
+
+    let sprite = this.elvisSprite;
+
+    if (
+      this.battleMode === "elvis" &&
+      (
+        this.state === "rhythm" ||
+        (
+          this.state === "paused" &&
+          this.previousState === "rhythm"
+        )
+      )
+    ) {
+      const danceSprite =
+        this.elvisDanceSprites[
+          this.elvisDanceFrame
+        ];
+
+      if (
+        danceSprite &&
+        danceSprite.complete &&
+        danceSprite.naturalWidth > 0
+      ) {
+        sprite = danceSprite;
+      }
+    }
+
+    if (
+      !sprite ||
+      !sprite.complete ||
+      sprite.naturalWidth === 0
+    ) {
+      return;
+    }
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    ctx.drawImage(
+      sprite,
+      x,
+      y,
+      width,
+      height
+    );
+
+    ctx.restore();
   }
 
   drawCharacters() {
@@ -1366,33 +1978,58 @@ export class Game {
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
+
     ctx.translate(
       80 - this.player.x,
       355 - this.player.y
     );
+
     this.player.draw(ctx);
     ctx.restore();
 
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.translate(
-      990 - this.alien.x,
-      365 - this.alien.y
-    );
-    this.alien.draw(ctx);
-    ctx.restore();
+    if (
+      this.battleMode === "elvis"
+    ) {
+      this.drawElvis(
+        950,
+        255,
+        260,
+        340
+      );
+    } else {
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+
+      ctx.translate(
+        990 - this.alien.x,
+        365 - this.alien.y
+      );
+
+      this.alien.draw(ctx);
+      ctx.restore();
+    }
   }
 
-  drawWrappedText(text, x, y, maxWidth, lineHeight) {
+  drawWrappedText(
+    text,
+    x,
+    y,
+    maxWidth,
+    lineHeight
+  ) {
     const ctx = this.context;
+
     const words = text.split(" ");
     let line = "";
 
     for (const word of words) {
-      const nextLine = line ? line + " " + word : word;
+      const nextLine = line
+        ? line + " " + word
+        : word;
 
       if (
-        ctx.measureText(nextLine).width > maxWidth &&
+        ctx.measureText(nextLine).width >
+          maxWidth &&
         line
       ) {
         ctx.fillText(line, x, y);
@@ -1410,46 +2047,85 @@ export class Game {
 
   drawDialogueBox(speaker, text, hint) {
     const ctx = this.context;
-    const color = speaker === "FREDDIE"
-      ? "#a6ff00"
-      : "#53ddff";
 
-    ctx.fillStyle = "rgba(3,2,15,0.55)";
-    ctx.fillRect(0, 0, 1280, 720);
+    const color =
+      speaker === "FREDDIE"
+        ? "#a6ff00"
+        : "#53ddff";
 
-    ctx.fillStyle = "rgba(18,13,46,0.97)";
-    ctx.fillRect(75, 455, 1130, 225);
+    ctx.fillStyle =
+      "rgba(3,2,15,0.55)";
+
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
+
+    ctx.fillStyle =
+      "rgba(18,13,46,0.97)";
+
+    ctx.fillRect(
+      75,
+      455,
+      1130,
+      225
+    );
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 5;
-    ctx.strokeRect(75, 455, 1130, 225);
+
+    ctx.strokeRect(
+      75,
+      455,
+      1130,
+      225
+    );
 
     ctx.textAlign = "left";
     ctx.fillStyle = color;
-    ctx.font = "bold 27px Arial";
-    ctx.fillText(speaker, 115, 505);
+    ctx.font = "bold 27px Silkscreen";
 
-    if (speaker === "FREDDIE") {
-      ctx.font = "16px Arial";
+    ctx.fillText(
+      speaker,
+      115,
+      505
+    );
+
+    if (
+      speaker === "FREDDIE"
+    ) {
+      ctx.font = "16px Silkscreen";
       ctx.fillStyle = "#c8c4d8";
-      ctx.fillText("Freddielux Mercury-9000", 265, 503);
+
+      ctx.fillText(
+        "Freddielux Mercury-9000",
+        265,
+        503
+      );
     }
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "23px Arial";
+    ctx.font = "19px Silkscreen";
 
     this.drawWrappedText(
       text,
       115,
       547,
       1040,
-      31
+      27
     );
 
     ctx.fillStyle = color;
-    ctx.font = "bold 16px Arial";
+    ctx.font = "bold 14px Silkscreen";
     ctx.textAlign = "right";
-    ctx.fillText(hint, 1150, 646);
+
+    ctx.fillText(
+      hint,
+      1150,
+      646
+    );
 
     ctx.textAlign = "start";
   }
@@ -1465,17 +2141,29 @@ export class Game {
       this.drawCredits();
     } else if (this.state === "dialogue") {
       this.drawDialogue();
-    } else if (this.state === "victoryDialogue") {
+    } else if (
+      this.state === "victoryDialogue"
+    ) {
       this.drawVictoryDialogue();
-    } else if (this.state === "rhythmIntro") {
+    } else if (
+      this.state === "rhythmIntro"
+    ) {
       this.drawRhythmIntro();
-    } else if (this.state === "rhythm") {
+    } else if (
+      this.state === "rhythm"
+    ) {
       this.drawRhythm();
-    } else if (this.state === "rhythmEnd") {
+    } else if (
+      this.state === "rhythmEnd"
+    ) {
       this.drawRhythmEnd();
-    } else if (this.state === "hallway") {
+    } else if (
+      this.state === "hallway"
+    ) {
       this.drawHallway();
-    } else if (this.state === "investigation") {
+    } else if (
+      this.state === "investigation"
+    ) {
       this.drawInvestigation();
     } else {
       this.drawGame();
@@ -1486,32 +2174,58 @@ export class Game {
     const ctx = this.context;
 
     ctx.fillStyle = "#101225";
-    ctx.fillRect(0, 0, 1280, 720);
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
 
-    if (!this.comicImage.complete || !this.comicImage.naturalWidth) {
+    if (
+      !this.comicImage.complete ||
+      !this.comicImage.naturalWidth
+    ) {
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "24px Arial";
-      ctx.fillText("Cargando cómic...", 640, 360);
+      ctx.font = "24px Silkscreen";
+
+      ctx.fillText(
+        "Cargando cómic...",
+        640,
+        360
+      );
+
       return;
     }
 
-    const frameWidth = this.comicImage.naturalWidth / 2;
-    const frameHeight = this.comicImage.naturalHeight / 2;
+    const frameWidth =
+      this.comicImage.naturalWidth / 2;
 
-    const column = this.comicIndex % 2;
-    const row = Math.floor(this.comicIndex / 2);
+    const frameHeight =
+      this.comicImage.naturalHeight / 2;
+
+    const column =
+      this.comicIndex % 2;
+
+    const row =
+      Math.floor(this.comicIndex / 2);
 
     const scale = Math.min(
       1050 / frameWidth,
       580 / frameHeight
     );
 
-    const drawWidth = frameWidth * scale;
-    const drawHeight = frameHeight * scale;
+    const drawWidth =
+      frameWidth * scale;
 
-    const drawX = (1280 - drawWidth) / 2;
-    const drawY = (720 - drawHeight) / 2 - 20;
+    const drawHeight =
+      frameHeight * scale;
+
+    const drawX =
+      (1280 - drawWidth) / 2;
+
+    const drawY =
+      (720 - drawHeight) / 2 - 20;
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -1531,8 +2245,9 @@ export class Game {
     ctx.restore();
 
     ctx.textAlign = "center";
+
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 21px Arial";
+    ctx.font = "bold 21px Silkscreen";
 
     ctx.fillText(
       `${this.comicIndex + 1} / ${this.comicTotal}`,
@@ -1541,7 +2256,7 @@ export class Game {
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px Arial";
+    ctx.font = "19px Silkscreen";
 
     ctx.fillText(
       this.comicIndex === 3
@@ -1558,13 +2273,16 @@ export class Game {
     this.alien.draw(this.context);
     this.player.draw(this.context);
 
-    const dialogue = this.dialogues[this.dialogueIndex];
+    const dialogue =
+      this.dialogues[this.dialogueIndex];
+
     if (!dialogue) return;
 
     this.drawDialogueBox(
       dialogue.speaker,
       dialogue.text,
-      this.dialogueIndex === this.dialogues.length - 1
+      this.dialogueIndex ===
+        this.dialogues.length - 1
         ? "CLIC PARA INICIAR EL TUTORIAL >"
         : "CLIC PARA CONTINUAR >"
     );
@@ -1580,7 +2298,7 @@ export class Game {
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 44px Arial";
+    ctx.font = "bold 36px Silkscreen";
 
     ctx.fillText(
       "¡TUTORIAL COMPLETADO!",
@@ -1589,8 +2307,13 @@ export class Game {
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 28px Arial";
-    ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 225);
+    ctx.font = "bold 26px Silkscreen";
+
+    ctx.fillText(
+      `PUNTUACIÓN ${this.score}`,
+      640,
+      225
+    );
 
     this.drawDialogueBox(
       "FREDDIE",
@@ -1605,11 +2328,14 @@ export class Game {
     this.drawHallwayBackground();
     this.player.draw(ctx);
 
-    if (this.isNearHallwayLeftDoor()) {
+    if (
+      this.isNearHallwayLeftDoor()
+    ) {
       ctx.save();
+
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 22px Arial";
+      ctx.font = "bold 20px Silkscreen";
 
       ctx.fillText(
         "Presiona E para entrar a la sala",
@@ -1622,72 +2348,156 @@ export class Game {
   }
 
   drawInvestigation() {
+    const ctx = this.context;
+
     this.drawInvestigationBackground();
-    this.player.draw(this.context);
+
+    this.drawElvis(
+      this.elvisPosition.x,
+      this.elvisPosition.y,
+      this.elvisPosition.width,
+      this.elvisPosition.height
+    );
+
+    this.player.draw(ctx);
+
+    if (
+      this.isNearElvis()
+    ) {
+      ctx.save();
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#a6ff00";
+      ctx.font = "bold 18px Silkscreen";
+
+      ctx.fillText(
+        this.elvisDefeated
+          ? "Presiona E para volver a desafiar a Elvis"
+          : "Presiona E para desafiar a Elvis",
+        640,
+        690
+      );
+
+      ctx.restore();
+    }
   }
 
   drawPause() {
     const ctx = this.context;
 
-    if (this.previousState === "playing") {
+    if (
+      this.previousState === "playing"
+    ) {
       this.drawGame();
-    } else if (this.previousState === "comic") {
+    } else if (
+      this.previousState === "comic"
+    ) {
       this.drawComic();
-    } else if (this.previousState === "dialogue") {
+    } else if (
+      this.previousState === "dialogue"
+    ) {
       this.drawDialogue();
-    } else if (this.previousState === "victoryDialogue") {
+    } else if (
+      this.previousState === "victoryDialogue"
+    ) {
       this.drawVictoryDialogue();
-    } else if (this.previousState === "rhythm") {
+    } else if (
+      this.previousState === "rhythm"
+    ) {
       this.drawRhythm();
-    } else if (this.previousState === "rhythmIntro") {
+    } else if (
+      this.previousState === "rhythmIntro"
+    ) {
       this.drawRhythmIntro();
-    } else if (this.previousState === "rhythmEnd") {
+    } else if (
+      this.previousState === "rhythmEnd"
+    ) {
       this.drawRhythmEnd();
-    } else if (this.previousState === "hallway") {
+    } else if (
+      this.previousState === "hallway"
+    ) {
       this.drawHallway();
-    } else if (this.previousState === "investigation") {
+    } else if (
+      this.previousState === "investigation"
+    ) {
       this.drawInvestigation();
     }
 
-    ctx.fillStyle = "rgba(0,0,0,0.70)";
-    ctx.fillRect(0, 0, 1280, 720);
+    ctx.fillStyle =
+      "rgba(0,0,0,0.70)";
 
-    if (this.pauseImage.complete && this.pauseImage.naturalWidth > 0) {
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
+
+    if (
+      this.pauseImage.complete &&
+      this.pauseImage.naturalWidth > 0
+    ) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(this.pauseImage, 0, 0, 1280, 720);
+
+      ctx.drawImage(
+        this.pauseImage,
+        0,
+        0,
+        1280,
+        720
+      );
+
       ctx.restore();
     } else {
       ctx.textAlign = "center";
 
       ctx.fillStyle = "#a6ff00";
-      ctx.font = "bold 78px Arial";
-      ctx.fillText("PAUSA", 640, 315);
+      ctx.font = "bold 70px Silkscreen";
+
+      ctx.fillText(
+        "PAUSA",
+        640,
+        315
+      );
 
       ctx.fillStyle = "#32e6ff";
       ctx.fillRect(475, 443, 307, 67);
 
       ctx.fillStyle = "#8000c8";
-      ctx.font = "bold 30px Arial";
-      ctx.fillText("CONTINUAR", 640, 488);
+      ctx.font = "bold 27px Silkscreen";
+
+      ctx.fillText(
+        "CONTINUAR",
+        640,
+        488
+      );
 
       ctx.fillStyle = "#8000c8";
       ctx.fillRect(475, 520, 307, 66);
 
       ctx.fillStyle = "#32e6ff";
-      ctx.fillText("SALIR", 640, 565);
+
+      ctx.fillText(
+        "SALIR",
+        640,
+        565
+      );
     }
   }
 
   drawMenu() {
     this.drawBackground();
 
-    this.drawContainedImage(this.logo, {
-      x: 145,
-      y: 30,
-      width: 990,
-      height: 390
-    });
+    this.drawContainedImage(
+      this.logo,
+      {
+        x: 145,
+        y: 30,
+        width: 990,
+        height: 390
+      }
+    );
 
     this.drawContainedImage(
       this.playImage,
@@ -1707,36 +2517,74 @@ export class Game {
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 48px Arial";
-    ctx.fillText("CREDITS", 640, 75);
+    ctx.font = "bold 44px Silkscreen";
 
-    this.drawContainedImage(this.studioLogo, {
-      x: 490,
-      y: 100,
-      width: 300,
-      height: 250
-    });
+    ctx.fillText(
+      "CREDITS",
+      640,
+      75
+    );
+
+    this.drawContainedImage(
+      this.studioLogo,
+      {
+        x: 490,
+        y: 100,
+        width: 300,
+        height: 250
+      }
+    );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 27px Arial";
-    ctx.fillText("DOUBLE M STUDIO", 640, 385);
+    ctx.font = "bold 25px Silkscreen";
+
+    ctx.fillText(
+      "DOUBLE M STUDIO",
+      640,
+      385
+    );
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 20px Arial";
-    ctx.fillText("DESARROLLO DEL VIDEOJUEGO", 640, 425);
+    ctx.font = "bold 17px Silkscreen";
+
+    ctx.fillText(
+      "DESARROLLO DEL VIDEOJUEGO",
+      640,
+      425
+    );
 
     ctx.fillStyle = "#c8c4d8";
-    ctx.font = "20px Arial";
-    ctx.fillText("Desarrollado por", 640, 465);
+    ctx.font = "18px Silkscreen";
+
+    ctx.fillText(
+      "Desarrollado por",
+      640,
+      465
+    );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText("Mariana A. Reyes", 640, 505);
-    ctx.fillText("Oscar Michel Ortega Martinez", 640, 540);
+    ctx.font = "bold 20px Silkscreen";
+
+    ctx.fillText(
+      "Mariana A. Reyes",
+      640,
+      505
+    );
+
+    ctx.fillText(
+      "Oscar Michel Ortega Martinez",
+      640,
+      540
+    );
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "18px Arial";
-    ctx.fillText("ABDUCCIÓN DISCO", 640, 585);
+    ctx.font = "16px Silkscreen";
+
+    ctx.fillText(
+      "ABDUCCIÓN DISCO",
+      640,
+      585
+    );
 
     this.drawBackButton();
   }
@@ -1746,8 +2594,13 @@ export class Game {
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
-    ctx.font = "20px Arial";
-    ctx.fillText("← BACK", 35, 55);
+    ctx.font = "18px Silkscreen";
+
+    ctx.fillText(
+      "← BACK",
+      35,
+      55
+    );
   }
 
   drawGame() {
@@ -1765,7 +2618,7 @@ export class Game {
       this.isNear(this.player, this.alien)
     ) {
       ctx.fillStyle = "#ffffff";
-      ctx.font = "20px Arial";
+      ctx.font = "18px Silkscreen";
 
       ctx.fillText(
         "Presiona E para hablar con Freddie",
@@ -1778,14 +2631,16 @@ export class Game {
       ctx.fillStyle = "#ffffff";
 
       if (this.isNearDoor()) {
-        ctx.font = "bold 22px Arial";
+        ctx.font = "bold 20px Silkscreen";
+
         ctx.fillText(
           "Presiona E para entrar al pasillo",
           640,
           675
         );
       } else {
-        ctx.font = "18px Arial";
+        ctx.font = "16px Silkscreen";
+
         ctx.fillText(
           "Dirígete a la puerta de cristal de la izquierda",
           640,
@@ -1798,11 +2653,20 @@ export class Game {
   }
 
   drawRhythmIntro() {
+    if (
+      this.battleMode === "elvis"
+    ) {
+      this.drawElvisIntro();
+      return;
+    }
+
     const ctx = this.context;
 
     this.drawDuelRoom();
 
-    ctx.fillStyle = "rgba(5,3,22,0.94)";
+    ctx.fillStyle =
+      "rgba(5,3,22,0.94)";
+
     ctx.fillRect(0, 0, 1280, 720);
 
     this.drawCharacters();
@@ -1817,11 +2681,17 @@ export class Game {
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 32px Arial";
-    ctx.fillText("TUTORIAL DE RITMO", 640, 115);
+    ctx.font = "bold 29px Silkscreen";
+
+    ctx.fillText(
+      "TUTORIAL DE RITMO",
+      640,
+      115
+    );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px Arial";
+    ctx.font = "17px Silkscreen";
+
     ctx.fillText(
       "Conoce las notas antes del duelo",
       640,
@@ -1866,21 +2736,37 @@ export class Game {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px Arial";
-      ctx.fillText(item.title, 460, item.y - 6);
+      ctx.font = "bold 18px Silkscreen";
 
-      ctx.font = "17px Arial";
-      ctx.fillText(item.description, 460, item.y + 20);
+      ctx.fillText(
+        item.title,
+        460,
+        item.y - 6
+      );
+
+      ctx.font = "15px Silkscreen";
+
+      ctx.fillText(
+        item.description,
+        460,
+        item.y + 20
+      );
     }
 
     ctx.textAlign = "center";
     ctx.fillStyle = "#ffdc69";
-    ctx.font = "16px Arial";
-    ctx.fillText("3 errores seguidos = derrota", 640, 588);
+    ctx.font = "15px Silkscreen";
+
+    ctx.fillText(
+      "3 errores seguidos = derrota",
+      640,
+      588
+    );
 
     const button = this.buttons.begin;
 
     ctx.fillStyle = "#a6ff00";
+
     ctx.fillRect(
       button.x,
       button.y,
@@ -1889,8 +2775,90 @@ export class Game {
     );
 
     ctx.fillStyle = "#101225";
-    ctx.font = "bold 25px Arial";
-    ctx.fillText("INICIAR DUELO", 640, 656);
+    ctx.font = "bold 23px Silkscreen";
+
+    ctx.fillText(
+      "INICIAR DUELO",
+      640,
+      656
+    );
+
+    this.drawBackButton();
+  }
+
+  drawElvisIntro() {
+    const ctx = this.context;
+
+    this.drawInvestigationBackground();
+
+    ctx.fillStyle =
+      "rgba(5,3,22,0.88)";
+
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
+
+    this.drawCharacters();
+
+    ctx.textAlign = "center";
+
+    ctx.fillStyle = "#ffdc69";
+    ctx.font = "bold 42px Silkscreen";
+
+    ctx.fillText(
+      "PRIMERA BATALLA",
+      640,
+      130
+    );
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 31px Silkscreen";
+
+    ctx.fillText(
+      "ELVIS VS PROTAGONISTA",
+      640,
+      200
+    );
+
+    ctx.font = "21px Silkscreen";
+
+    ctx.fillText(
+      "Demuestra quién domina la pista de baile",
+      640,
+      280
+    );
+
+    ctx.fillStyle = "#ff60b6";
+    ctx.font = "bold 21px Silkscreen";
+
+    ctx.fillText(
+      "3 ERRORES SEGUIDOS = DERROTA",
+      640,
+      340
+    );
+
+    const button = this.buttons.begin;
+
+    ctx.fillStyle = "#a6ff00";
+
+    ctx.fillRect(
+      button.x,
+      button.y,
+      button.width,
+      button.height
+    );
+
+    ctx.fillStyle = "#101225";
+    ctx.font = "bold 23px Silkscreen";
+
+    ctx.fillText(
+      "INICIAR BATALLA",
+      640,
+      656
+    );
 
     this.drawBackButton();
   }
@@ -1898,32 +2866,67 @@ export class Game {
   drawRhythm() {
     const ctx = this.context;
 
-    this.drawDuelRoom();
+    this.drawRhythmBackground();
 
-    ctx.fillStyle = "rgba(5,3,22,0.91)";
-    ctx.fillRect(0, 0, 1280, 720);
+    ctx.fillStyle =
+      "rgba(5,3,22,0.91)";
+
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
 
     this.drawCharacters();
 
     ctx.textAlign = "center";
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 33px Arial";
-    ctx.fillText("TUTORIAL DE RITMO", 640, 55);
+    ctx.font = "bold 30px Silkscreen";
+
+    ctx.fillText(
+      this.battleMode === "elvis"
+        ? "BATALLA 1: ELVIS"
+        : "TUTORIAL DE RITMO",
+      640,
+      55
+    );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 23px Arial";
-    ctx.fillText(`PUNTOS ${this.score}`, 175, 145);
+    ctx.font = "bold 20px Silkscreen";
+
+    ctx.fillText(
+      `PUNTOS ${this.score}`,
+      175,
+      145
+    );
 
     ctx.fillStyle = "#ff60b6";
-    ctx.fillText(`COMBO x${this.combo}`, 1100, 145);
+
+    ctx.fillText(
+      `COMBO x${this.combo}`,
+      1100,
+      145
+    );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "19px Arial";
-    ctx.fillText(`ACIERTOS ${this.hits}`, 175, 210);
-    ctx.fillText(`ERRORES ${this.misses}/3`, 1100, 210);
+    ctx.font = "17px Silkscreen";
+
+    ctx.fillText(
+      `ACIERTOS ${this.hits}`,
+      175,
+      210
+    );
+
+    ctx.fillText(
+      `ERRORES ${this.misses}/3`,
+      1100,
+      210
+    );
 
     ctx.fillStyle = "#15112e";
+
     ctx.fillRect(
       this.trackLeft,
       105,
@@ -1933,6 +2936,7 @@ export class Game {
 
     ctx.strokeStyle = "#8e45dc";
     ctx.lineWidth = 4;
+
     ctx.strokeRect(
       this.trackLeft,
       105,
@@ -1947,14 +2951,24 @@ export class Game {
       "#ff60b6"
     ];
 
-    for (let i = 0; i < this.notePositions.length; i++) {
+    for (
+      let i = 0;
+      i < this.notePositions.length;
+      i++
+    ) {
       const x = this.notePositions[i];
 
-      ctx.fillStyle = i % 2 === 0
-        ? "rgba(100,55,170,0.10)"
-        : "rgba(25,150,180,0.08)";
+      ctx.fillStyle =
+        i % 2 === 0
+          ? "rgba(100,55,170,0.10)"
+          : "rgba(25,150,180,0.08)";
 
-      ctx.fillRect(x - 58, 110, 116, 510);
+      ctx.fillRect(
+        x - 58,
+        110,
+        116,
+        510
+      );
 
       ctx.strokeStyle = laneColors[i];
       ctx.globalAlpha = 0.25;
@@ -1969,37 +2983,62 @@ export class Game {
     }
 
     ctx.save();
+
     ctx.strokeStyle = "#53ddff";
     ctx.lineWidth = 6;
     ctx.shadowColor = "#53ddff";
     ctx.shadowBlur = 20;
 
     ctx.beginPath();
-    ctx.moveTo(this.trackLeft, this.hitY);
-    ctx.lineTo(this.trackRight, this.hitY);
+
+    ctx.moveTo(
+      this.trackLeft,
+      this.hitY
+    );
+
+    ctx.lineTo(
+      this.trackRight,
+      this.hitY
+    );
+
     ctx.stroke();
     ctx.restore();
 
     for (const note of this.notes) {
-      if (note.status !== "pending") continue;
+      if (
+        note.status !== "pending"
+      ) {
+        continue;
+      }
 
       const y = this.getNoteY(note);
 
-      if (y < 90 || y > 640) continue;
+      if (
+        y < 90 ||
+        y > 640
+      ) {
+        continue;
+      }
 
       let sprite;
       let color;
       let size;
 
-      if (note.type === "circle") {
+      if (
+        note.type === "circle"
+      ) {
         sprite = this.normalSprite;
         color = "#b970ff";
         size = 80;
-      } else if (note.type === "double") {
+      } else if (
+        note.type === "double"
+      ) {
         sprite = this.doubleSprite;
         color = "#ff65bf";
         size = 85;
-      } else if (note.type === "star") {
+      } else if (
+        note.type === "star"
+      ) {
         sprite = this.starSprite;
         color = "#ffdc69";
         size = 85;
@@ -2019,15 +3058,21 @@ export class Game {
     }
 
     for (const effect of this.effects) {
-      const progress = 1 - effect.life / 0.5;
+      const progress =
+        1 - effect.life / 0.5;
 
       ctx.save();
 
-      ctx.globalAlpha = Math.max(0, effect.life / 0.5);
+      ctx.globalAlpha = Math.max(
+        0,
+        effect.life / 0.5
+      );
+
       ctx.strokeStyle = effect.color;
       ctx.lineWidth = 5;
 
       ctx.beginPath();
+
       ctx.arc(
         effect.x,
         effect.y,
@@ -2035,27 +3080,43 @@ export class Game {
         0,
         Math.PI * 2
       );
+
       ctx.stroke();
       ctx.restore();
     }
 
     ctx.fillStyle = "#b8edff";
-    ctx.font = "17px Arial";
+    ctx.font = "15px Silkscreen";
+
     ctx.fillText(
-      "HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA",
+      this.battleMode === "elvis"
+        ? "SIGUE EL RITMO Y VENCE A ELVIS"
+        : "HAZ CLIC CUANDO LA NOTA TOQUE LA LÍNEA",
       640,
       651
     );
 
-    if (this.feedbackTimer > 0) {
-      ctx.fillStyle = this.feedbackColor;
-      ctx.font = "bold 22px Arial";
-      ctx.fillText(this.feedback, 640, 94);
+    if (
+      this.feedbackTimer > 0
+    ) {
+      ctx.fillStyle =
+        this.feedbackColor;
+
+      ctx.font = "bold 20px Silkscreen";
+
+      ctx.fillText(
+        this.feedback,
+        640,
+        94
+      );
     }
 
-    if (this.music.playbackRate !== 1) {
+    if (
+      this.music.playbackRate !== 1
+    ) {
       ctx.fillStyle = "#ffdc69";
-      ctx.font = "18px Arial";
+      ctx.font = "16px Silkscreen";
+
       ctx.fillText(
         `VELOCIDAD x${this.music.playbackRate.toFixed(2)}`,
         1100,
@@ -2069,36 +3130,74 @@ export class Game {
   drawRhythmEnd() {
     const ctx = this.context;
 
-    this.drawDuelRoom();
+    this.drawRhythmBackground();
 
-    ctx.fillStyle = "rgba(7,4,26,0.92)";
-    ctx.fillRect(0, 0, 1280, 720);
+    ctx.fillStyle =
+      "rgba(7,4,26,0.92)";
+
+    ctx.fillRect(
+      0,
+      0,
+      1280,
+      720
+    );
 
     this.drawCharacters();
 
     ctx.textAlign = "center";
 
-    const victoria = this.result === "victory";
+    const victory =
+      this.result === "victory";
 
-    ctx.fillStyle = victoria ? "#a6ff00" : "#ff576d";
-    ctx.font = "bold 44px Arial";
+    ctx.fillStyle = victory
+      ? "#a6ff00"
+      : "#ff576d";
+
+    ctx.font = "bold 37px Silkscreen";
+
+    let title = "";
+
+    if (
+      this.battleMode === "elvis"
+    ) {
+      title = victory
+        ? "¡VICTORIA CONTRA ELVIS!"
+        : "¡ELVIS TE HA DERROTADO!";
+    } else {
+      title = victory
+        ? "¡TUTORIAL COMPLETADO!"
+        : "¡HAS PERDIDO!";
+    }
+
     ctx.fillText(
-      victoria ? "¡TUTORIAL COMPLETADO!" : "¡HAS PERDIDO!",
+      title,
       640,
       220
     );
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 34px Arial";
-    ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 305);
+    ctx.font = "bold 29px Silkscreen";
 
-    ctx.font = "23px Arial";
-    ctx.fillText(`Aciertos: ${this.hits}`, 640, 365);
+    ctx.fillText(
+      `PUNTUACIÓN ${this.score}`,
+      640,
+      305
+    );
+
+    ctx.font = "20px Silkscreen";
+
+    ctx.fillText(
+      `Aciertos: ${this.hits}`,
+      640,
+      365
+    );
+
     ctx.fillText(
       `Errores consecutivos: ${this.misses}`,
       640,
       405
     );
+
     ctx.fillText(
       `Errores totales: ${this.totalMisses}`,
       640,
@@ -2108,6 +3207,7 @@ export class Game {
     const button = this.buttons.restart;
 
     ctx.fillStyle = "#a6ff00";
+
     ctx.fillRect(
       button.x,
       button.y,
@@ -2116,8 +3216,16 @@ export class Game {
     );
 
     ctx.fillStyle = "#101225";
-    ctx.font = "bold 25px Arial";
-    ctx.fillText("VOLVER A JUGAR", 640, 540);
+    ctx.font = "bold 22px Silkscreen";
+
+    ctx.fillText(
+      victory &&
+      this.battleMode === "elvis"
+        ? "JUGAR DE NUEVO"
+        : "VOLVER A JUGAR",
+      640,
+      540
+    );
 
     this.drawBackButton();
   }

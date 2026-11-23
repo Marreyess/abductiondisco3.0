@@ -4,7 +4,13 @@ import { Game } from "./game.js";
 const canvas = document.getElementById("gameCanvas");
 const game = new Game(canvas);
 
-game.start();
+document.fonts.load('20px "Silkscreen"')
+  .then(() => {
+    game.start();
+  })
+  .catch(() => {
+    game.start();
+  });
 
 canvas.addEventListener("click", (event) => {
   const rect = canvas.getBoundingClientRect();
