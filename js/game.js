@@ -328,7 +328,7 @@ export class Game {
       }
     };
 
-    this.music = new Audio("./assets/Music_Puffs.wav");
+    this.music = new Audio("./assets/Queen - Another One Bites The Dust (NOWERE Remix) [Extended Mix].wav");
     this.music.preload = "auto";
     this.music.volume = 0.7;
     this.music.loop = false;
