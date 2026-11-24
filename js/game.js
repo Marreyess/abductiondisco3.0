@@ -52,7 +52,7 @@ export class Game {
 
     this.elvisPosition = {
       x: 250,
-      y: 380,
+      y: 370,
       width: 205,
       height: 260
     };
@@ -284,51 +284,16 @@ export class Game {
     this.backgroundVideo.play().catch(() => {});
 
     this.buttons = {
-      play: {
-        x: 490,
-        y: 450,
-        width: 300,
-        height: 100
-      },
-      credits: {
-        x: 490,
-        y: 560,
-        width: 300,
-        height: 75
-      },
-      back: {
-        x: 35,
-        y: 28,
-        width: 115,
-        height: 42
-      },
-      begin: {
-        x: 475,
-        y: 615,
-        width: 330,
-        height: 65
-      },
-      restart: {
-        x: 470,
-        y: 495,
-        width: 340,
-        height: 75
-      },
-      pauseContinue: {
-        x: 475,
-        y: 443,
-        width: 307,
-        height: 67
-      },
-      pauseExit: {
-        x: 475,
-        y: 520,
-        width: 307,
-        height: 66
-      }
+      play: { x: 490, y: 450, width: 300, height: 100 },
+      credits: { x: 490, y: 560, width: 300, height: 75 },
+      back: { x: 35, y: 28, width: 115, height: 42 },
+      begin: { x: 475, y: 615, width: 330, height: 65 },
+      restart: { x: 470, y: 495, width: 340, height: 75 },
+      pauseContinue: { x: 475, y: 443, width: 307, height: 67 },
+      pauseExit: { x: 475, y: 520, width: 307, height: 66 }
     };
 
-    this.music = new Audio("./assets/Queen - Another One Bites The Dust (NOWERE Remix) [Extended Mix].wav");
+    this.music = new Audio("./assets/Queen - Another One Bites The Dust.wav");
     this.music.preload = "auto";
     this.music.volume = 0.7;
     this.music.loop = false;
@@ -355,6 +320,11 @@ export class Game {
 
     this.hitWindow = 0.2;
     this.perfectWindow = 0.075;
+
+    this.doubleHitWindow = 0.32;
+    this.doubleHitRadius = 85;
+    this.doubleClickDelay = 420;
+    this.doubleHitYRadius = 75;
 
     this.notePositions = [
       440,
@@ -385,6 +355,10 @@ export class Game {
 
     this.speedEffectUntil = 0;
     this.result = "";
+
+    this.starSlowSpeed = 0.65;
+    this.starFastSpeed = 1.35;
+    this.starEffectDuration = 3;
 
     this.rhythm = {
       slider: null
@@ -1393,9 +1367,20 @@ export class Game {
         continue;
       }
 
+      const allowedTime =
+        note.type === "double"
+          ? this.doubleHitWindow
+          : this.hitWindow;
+
+      const extraTime =
+        note.type === "double" &&
+        note.firstClickTime !== null
+          ? 0.12
+          : 0;
+
       if (
         this.rhythmTime >
-        note.time + this.hitWindow
+        note.time + allowedTime + extraTime
       ) {
         if (
           note.type === "crossout"
@@ -1457,9 +1442,25 @@ export class Game {
         x - note.x
       );
 
+      const allowedTime =
+        note.type === "double"
+          ? this.doubleHitWindow
+          : this.hitWindow;
+
+      const allowedRadius =
+        note.type === "double"
+          ? this.doubleHitRadius
+          : 55;
+
+      const extraTime =
+        note.type === "double" &&
+        note.firstClickTime !== null
+          ? 0.12
+          : 0;
+
       if (
-        difference <= this.hitWindow &&
-        distanceX <= 55
+        difference <= allowedTime + extraTime &&
+        distanceX <= allowedRadius
       ) {
         const distance =
           difference * speed +
@@ -1479,7 +1480,8 @@ export class Game {
 
   hitNote(x, y, detail = 1) {
     if (
-      Math.abs(y - this.hitY) > 55
+      Math.abs(y - this.hitY) >
+      this.doubleHitYRadius
     ) {
       return;
     }
@@ -1491,7 +1493,18 @@ export class Game {
         "FUERA DE TIEMPO",
         "#ff647a"
       );
+      return;
+    }
 
+    const allowedY =
+      note.type === "double"
+        ? this.doubleHitYRadius
+        : 55;
+
+    if (
+      Math.abs(y - this.hitY) >
+      allowedY
+    ) {
       return;
     }
 
@@ -1521,8 +1534,21 @@ export class Game {
       const now = performance.now();
 
       if (
-        note.firstClickTime === null ||
-        now - note.firstClickTime > 350
+        note.firstClickTime === null
+      ) {
+        note.firstClickTime = now;
+
+        this.showFeedback(
+          "¡SEGUNDO CLIC!",
+          "#ffdc69"
+        );
+
+        return;
+      }
+
+      if (
+        now - note.firstClickTime >
+        this.doubleClickDelay
       ) {
         note.firstClickTime = now;
 
@@ -1546,10 +1572,14 @@ export class Game {
         ? 150
         : 100;
 
+    let feedbackMessage = "¡PERFECT!";
+    let feedbackColor = "#a6ff00";
+
     if (
       note.type === "double"
     ) {
       points = 200;
+      feedbackMessage = "¡DOBLE CLIC!";
     }
 
     if (
@@ -1557,29 +1587,42 @@ export class Game {
     ) {
       points = 300;
 
-      this.music.playbackRate = 0.5;
+      const randomEffect = Math.random();
+
+      if (randomEffect < 0.5) {
+        this.music.playbackRate =
+          this.starSlowSpeed;
+
+        feedbackMessage =
+          "¡ESTRELLA! MÚSICA LENTA";
+
+        feedbackColor = "#53ddff";
+      } else {
+        this.music.playbackRate =
+          this.starFastSpeed;
+
+        feedbackMessage =
+          "¡ESTRELLA! MÚSICA RÁPIDA";
+
+        feedbackColor = "#ffdc69";
+      }
 
       this.speedEffectUntil =
-        this.rhythmTime + 3;
+        this.rhythmTime +
+        this.starEffectDuration;
     }
 
     this.registerHit(points);
 
     this.showFeedback(
-      note.type === "star"
-        ? "¡ESTRELLA! TIEMPO LENTO"
-        : note.type === "double"
-          ? "¡DOBLE CLIC!"
-          : "¡PERFECT!",
-      note.type === "star"
-        ? "#ffdc69"
-        : "#a6ff00"
+      feedbackMessage,
+      feedbackColor
     );
 
     this.addEffect(
       note.x,
       this.hitY,
-      "#53ddff"
+      feedbackColor
     );
 
     this.checkRhythmEnd();
@@ -1700,6 +1743,8 @@ export class Game {
     this.music.pause();
     this.music.playbackRate = 1;
 
+    this.speedEffectUntil = 0;
+
     if (
       typeof this.alien.stopDance ===
       "function"
@@ -1745,6 +1790,8 @@ export class Game {
     ) {
       this.alien.stopDance();
     }
+
+    this.speedEffectUntil = 0;
 
     this.state =
       this.battleMode === "elvis"
@@ -1810,24 +1857,15 @@ export class Game {
     ctx.fillStyle =
       "rgba(5,3,18,0.42)";
 
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
   }
 
   drawDuelRoom() {
-    this.drawImageBackground(
-      this.duelRoom
-    );
+    this.drawImageBackground(this.duelRoom);
   }
 
   drawHallwayBackground() {
-    this.drawImageBackground(
-      this.hallwayImage
-    );
+    this.drawImageBackground(this.hallwayImage);
   }
 
   drawInvestigationBackground() {
@@ -1905,7 +1943,6 @@ export class Game {
       ctx.restore();
     } else {
       ctx.save();
-
       ctx.fillStyle = color;
 
       ctx.beginPath();
@@ -1924,7 +1961,6 @@ export class Game {
 
   drawElvis(x, y, width, height) {
     const ctx = this.context;
-
     let sprite = this.elvisSprite;
 
     if (
@@ -2018,7 +2054,6 @@ export class Game {
     lineHeight
   ) {
     const ctx = this.context;
-
     const words = text.split(" ");
     let line = "";
 
@@ -2056,32 +2091,16 @@ export class Game {
     ctx.fillStyle =
       "rgba(3,2,15,0.55)";
 
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
     ctx.fillStyle =
       "rgba(18,13,46,0.97)";
 
-    ctx.fillRect(
-      75,
-      455,
-      1130,
-      225
-    );
+    ctx.fillRect(75, 455, 1130, 225);
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 5;
-
-    ctx.strokeRect(
-      75,
-      455,
-      1130,
-      225
-    );
+    ctx.strokeRect(75, 455, 1130, 225);
 
     ctx.textAlign = "left";
     ctx.fillStyle = color;
@@ -2174,12 +2193,7 @@ export class Game {
     const ctx = this.context;
 
     ctx.fillStyle = "#101225";
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
     if (
       !this.comicImage.complete ||
@@ -2426,12 +2440,7 @@ export class Game {
     ctx.fillStyle =
       "rgba(0,0,0,0.70)";
 
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
     if (
       this.pauseImage.complete &&
@@ -2714,7 +2723,7 @@ export class Game {
       {
         image: this.starSprite,
         title: "ESTRELLA ESPECIAL",
-        description: "Ralentiza la música al acertar",
+        description: "Acelera o ralentiza la música al azar",
         y: 420
       },
       {
@@ -2744,7 +2753,7 @@ export class Game {
         item.y - 6
       );
 
-      ctx.font = "15px Silkscreen";
+      ctx.font = "14px Silkscreen";
 
       ctx.fillText(
         item.description,
@@ -2794,12 +2803,7 @@ export class Game {
     ctx.fillStyle =
       "rgba(5,3,22,0.88)";
 
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
     this.drawCharacters();
 
@@ -2871,12 +2875,7 @@ export class Game {
     ctx.fillStyle =
       "rgba(5,3,22,0.91)";
 
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
     this.drawCharacters();
 
@@ -3114,7 +3113,11 @@ export class Game {
     if (
       this.music.playbackRate !== 1
     ) {
-      ctx.fillStyle = "#ffdc69";
+      ctx.fillStyle =
+        this.music.playbackRate > 1
+          ? "#ffdc69"
+          : "#53ddff";
+
       ctx.font = "16px Silkscreen";
 
       ctx.fillText(
@@ -3135,12 +3138,7 @@ export class Game {
     ctx.fillStyle =
       "rgba(7,4,26,0.92)";
 
-    ctx.fillRect(
-      0,
-      0,
-      1280,
-      720
-    );
+    ctx.fillRect(0, 0, 1280, 720);
 
     this.drawCharacters();
 
