@@ -1,3 +1,8 @@
+
+
+
+
+
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 
@@ -86,6 +91,9 @@ export class Game {
     };
 
     this.elvisDefeated = false;
+    this.elvisVictoryShown = false;
+    this.elvisDialogueIndex = 0;
+    this.elvisVictoryText = "¡Uh-huh! ¡Me ganaste hasta el copete! Está bien, cariño, la puerta de la izquierda es tuya. ¡Pero no me pidas que te firme la nave!";
     this.battleMode = "tutorial";
 
     this.state = "menu";
@@ -413,6 +421,15 @@ this.hallway02WalkableArea = [
       }
     ];
 
+    this.elvisDialogues = [
+      { speaker: "ELVIS", text: "¡Uh-huh! ¡Alto ahí, terrícola! ¿Vienes a rescatarme o a pedirme un autógrafo?" },
+      { speaker: "PROTAGONISTA", text: "¿Por qué hay un Elvis extraterrestre en esta nave?" },
+      { speaker: "ELVIS", text: "¡Porque el Rey nunca murió, cariño! Solo cambié de planeta." },
+      { speaker: "PROTAGONISTA", text: "Claro... y supongo que también tengo que bailar contigo." },
+      { speaker: "ELVIS", text: "¡Exactamente! Si sobrevives a mis pasos, te dejo pasar. Si no... ¡te unes a mi club de fans!" },
+      { speaker: "PROTAGONISTA", text: "Definitivamente debí quedarme en casa." }
+    ];
+
     this.backgroundVideo = document.createElement("video");
     this.backgroundVideo.src = "./assets/space-background.mp4";
     this.backgroundVideo.loop = true;
@@ -428,12 +445,21 @@ this.hallway02WalkableArea = [
       back: { x: 35, y: 28, width: 115, height: 42 },
       begin: { x: 475, y: 615, width: 330, height: 65 },
       restart: { x: 470, y: 495, width: 340, height: 75 },
+      battleRestart: { x: 290, y: 495, width: 310, height: 75 },
+      explore: { x: 640, y: 495, width: 360, height: 75 },
       pauseContinue: { x: 475, y: 443, width: 307, height: 67 },
       pauseExit: { x: 475, y: 520, width: 307, height: 66 }
     };
 
-    this.currentMusicPath = "./assets/Queen - Another One Bites The Dust.wav";
+    this.tutorialMusicPath = "./assets/Queen - Another One Bites The Dust.wav";
+    this.elvisMusicPath = "./assets/Elvis Presley - Burning Love.wav";
+    this.michaelMusicPath = "./assets/Michael Jackson - Thriller.wav";
+    this.tutorialMusicStart = 50;
+    this.elvisMusicStart = 0;
+    this.michaelMusicStart = 35;
+    this.currentMusicPath = this.tutorialMusicPath;
     this.musicStartOffset = 0;
+    this.loadingRhythm = false;
     this.music = new Audio(this.currentMusicPath);
     this.music.preload = "auto";
     this.music.volume = 0.7;
@@ -509,104 +535,51 @@ this.hallway02WalkableArea = [
     this.canvas.addEventListener("click", () => {
       if (this.state === "disco" && this.activeMichaelDialogue >= 0) {
         this.activeMichaelDialogue++;
-
         if (this.activeMichaelDialogue >= this.michaelDialogue.length) {
           this.activeMichaelDialogue = -1;
           this.startRhythm("michael");
         }
-
-        return;
-      }
-
-      if (this.state === "victoryDialogue" && this.battleMode === "michael") {
-        this.finishVictoryDialogue();
       }
     });
 
     window.addEventListener("keydown", event => {
       if (event.key === "Escape") {
         event.preventDefault();
-
         if (event.repeat) return;
-
-        if (this.state === "disco" && this.activeMichaelDialogue >= 0) {
-          this.activeMichaelDialogue = -1;
-          this.wasInteracting = this.player.wantsToInteract();
-          return;
-        }
-
-        if (this.state === "victoryDialogue" && this.battleMode === "michael") {
-          this.finishVictoryDialogue();
-          return;
-        }
-
         if (this.state === "paused") {
           this.resumeGame();
-        } else if (
-          [
-            "comic",
-            "playing",
-            "dialogue",
-            "rhythmIntro",
-            "rhythm",
-            "rhythmEnd",
-            "victoryDialogue",
-            "hallway",
-            "hallway02",
-            "investigation",
-            "disco"
-          ].includes(this.state)
-        ) {
+        } else if ([
+          "comic", "playing", "dialogue", "elvisDialogue",
+          "elvisVictoryDialogue", "victoryDialogue", "rhythmIntro",
+          "rhythm", "rhythmEnd", "hallway", "hallway02",
+          "investigation", "disco"
+        ].includes(this.state)) {
           this.pauseGame();
         }
-
         return;
       }
-
-      if (
-        this.state === "dialogue" &&
-        (
-          event.key === "Enter" ||
-          event.code === "Space"
-        )
-      ) {
+      if (event.repeat || !(event.key === "Enter" || event.code === "Space")) return;
+      if (this.state === "dialogue") {
         event.preventDefault();
-
-        if (!event.repeat) {
-          this.nextDialogue();
-        }
-
-        return;
-      }
-
-      if (
-        this.state === "victoryDialogue" &&
-        this.battleMode !== "michael" &&
-        (
-          event.key === "Enter" ||
-          event.code === "Space"
-        )
-      ) {
+        this.nextDialogue();
+      } else if (this.state === "elvisDialogue") {
         event.preventDefault();
-
-        if (!event.repeat) {
-          this.finishVictoryDialogue();
-        }
-
-        return;
-      }
-
-      if (
-        this.state === "rhythmIntro" &&
-        (
-          event.key === "Enter" ||
-          event.code === "Space"
-        )
-      ) {
+        this.nextElvisDialogue();
+      } else if (this.state === "elvisVictoryDialogue") {
         event.preventDefault();
-
-        if (!event.repeat) {
-          this.beginRhythm();
+        this.finishElvisVictoryDialogue();
+      } else if (this.state === "victoryDialogue") {
+        event.preventDefault();
+        this.finishVictoryDialogue();
+      } else if (this.state === "rhythmIntro") {
+        event.preventDefault();
+        this.beginRhythm();
+      } else if (this.state === "disco" && this.activeMichaelDialogue >= 0) {
+        event.preventDefault();
+        this.activeMichaelDialogue++;
+        if (this.activeMichaelDialogue >= this.michaelDialogue.length) {
+          this.activeMichaelDialogue = -1;
+          this.startRhythm("michael");
         }
       }
     });
@@ -771,9 +744,16 @@ this.hallway02WalkableArea = [
 
     this.tutorialCompleted = false;
     this.elvisDefeated = false;
+    this.elvisVictoryShown = false;
+    this.elvisDialogueIndex = 0;
     this.michaelDefeated = false;
     this.activeMichaelDialogue = -1;
     this.battleMode = "tutorial";
+    this.currentMusicPath = this.tutorialMusicPath;
+    this.music.src = this.tutorialMusicPath;
+    this.music.load();
+    this.musicStartOffset = 0;
+    this.loadingRhythm = false;
 
     this.elvisDanceFrame = 0;
     this.elvisDanceTimer = 0;
@@ -816,116 +796,61 @@ this.hallway02WalkableArea = [
 
   handleClick(x, y, detail = 1) {
     if (this.state === "paused") {
-      if (
-        this.isInside(
-          x,
-          y,
-          this.buttons.pauseContinue
-        )
-      ) {
-        this.resumeGame();
-      } else if (
-        this.isInside(
-          x,
-          y,
-          this.buttons.pauseExit
-        )
-      ) {
-        this.exitPause();
-      }
-
+      if (this.isInside(x, y, this.buttons.pauseContinue)) this.resumeGame();
+      else if (this.isInside(x, y, this.buttons.pauseExit)) this.exitPause();
       return;
     }
-
     if (this.state === "menu") {
-      if (
-        this.isInside(x, y, this.buttons.play)
-      ) {
+      if (this.isInside(x, y, this.buttons.play)) {
         this.resetGame();
         this.state = "comic";
-      } else if (
-        this.isInside(x, y, this.buttons.credits)
-      ) {
-        this.state = "credits";
-      }
-
+      } else if (this.isInside(x, y, this.buttons.credits)) this.state = "credits";
       return;
     }
-
     if (this.state === "comic") {
       this.comicIndex++;
-
-      if (
-        this.comicIndex >= this.comicTotal
-      ) {
+      if (this.comicIndex >= this.comicTotal) {
         this.comicIndex = 0;
         this.resetPlayerPosition();
-
         this.state = "playing";
-
-        this.wasInteracting =
-          this.player.wantsToInteract();
+        this.wasInteracting = this.player.wantsToInteract();
       }
-
       return;
     }
-
-    if (this.state === "dialogue") {
-      this.nextDialogue();
-      return;
-    }
-
-    if (this.state === "victoryDialogue") {
-      this.finishVictoryDialogue();
-      return;
-    }
-
+    if (this.state === "dialogue") return this.nextDialogue();
+    if (this.state === "elvisDialogue") return this.nextElvisDialogue();
+    if (this.state === "elvisVictoryDialogue") return this.finishElvisVictoryDialogue();
+    if (this.state === "victoryDialogue") return this.finishVictoryDialogue();
     if (this.state === "credits") {
-      if (
-        this.isInside(x, y, this.buttons.back)
-      ) {
-        this.state = "menu";
-      }
-
+      if (this.isInside(x, y, this.buttons.back)) this.state = "menu";
       return;
     }
-
     if (this.state === "rhythmIntro") {
-      if (
-        this.isInside(x, y, this.buttons.back)
-      ) {
-        this.exitRhythm();
-      } else if (
-        this.isInside(x, y, this.buttons.begin)
-      ) {
-        this.beginRhythm();
-      }
-
+      if (this.isInside(x, y, this.buttons.back)) this.exitRhythm();
+      else if (this.isInside(x, y, this.buttons.begin)) this.beginRhythm();
       return;
     }
-
     if (this.state === "rhythmEnd") {
-      if (
-        this.isInside(x, y, this.buttons.back)
-      ) {
+      const wonBattle = this.result === "victory" &&
+        (this.battleMode === "elvis" || this.battleMode === "michael");
+      if (wonBattle) {
+        if (this.isInside(x, y, this.buttons.battleRestart)) {
+          this.startRhythm(this.battleMode);
+        } else if (this.isInside(x, y, this.buttons.explore) ||
+          this.isInside(x, y, this.buttons.back)) {
+          if (this.battleMode === "elvis") this.state = "elvisVictoryDialogue";
+          else this.state = "victoryDialogue";
+        }
+      } else if (this.isInside(x, y, this.buttons.back)) {
         this.exitRhythm();
-      } else if (
-        this.isInside(x, y, this.buttons.restart)
-      ) {
+      } else if (this.isInside(x, y, this.buttons.restart)) {
         this.startRhythm(this.battleMode);
       }
-
       return;
     }
-
     if (this.state === "rhythm") {
-      if (
-        this.isInside(x, y, this.buttons.back)
-      ) {
-        this.exitRhythm();
-      } else {
-        this.hitNote(x, y, detail);
-      }
+      if (this.isInside(x, y, this.buttons.back)) this.exitRhythm();
+      else this.hitNote(x, y, detail);
     }
   }
 
@@ -1019,7 +944,7 @@ this.hallway02WalkableArea = [
       !this.wasInteracting &&
       this.isNearElvis()
     ) {
-      this.startRhythm("elvis");
+      this.startElvisDialogue();
       return;
     }
 
@@ -1277,6 +1202,27 @@ this.hallway02WalkableArea = [
     }
   }
 
+  startElvisDialogue() {
+    this.elvisDialogueIndex = 0;
+    this.state = "elvisDialogue";
+    this.wasInteracting = true;
+  }
+
+  nextElvisDialogue() {
+    if (this.state !== "elvisDialogue") return;
+    this.elvisDialogueIndex++;
+    if (this.elvisDialogueIndex >= this.elvisDialogues.length) {
+      this.elvisDialogueIndex = 0;
+      this.startRhythm("elvis");
+    }
+  }
+
+  finishElvisVictoryDialogue() {
+    if (this.state !== "elvisVictoryDialogue") return;
+    this.elvisVictoryShown = true;
+    this.exitRhythm();
+  }
+
   finishVictoryDialogue() {
     if (
       this.state !== "victoryDialogue"
@@ -1482,117 +1428,31 @@ if (
 
   buildChart() {
     const fullDuration = this.music.duration;
+    const duration = Number.isFinite(fullDuration)
+      ? Math.max(0, fullDuration - this.musicStartOffset) : NaN;
     const isMichael = this.battleMode === "michael";
     const isElvis = this.battleMode === "elvis";
-    const duration = isMichael && Number.isFinite(fullDuration)
-      ? Math.max(0, fullDuration - this.musicStartOffset)
-      : fullDuration;
-
     let total = isMichael ? 48 : isElvis ? 36 : 24;
     let interval = isMichael ? 0.46 : isElvis ? 0.65 : 0.85;
     let first = isMichael ? 2.2 : 3;
-
-    if (
-      Number.isFinite(duration) &&
-      duration > 0
-    ) {
-      first = isMichael
-        ? 2.2
-        : Math.min(3, Math.max(0.5, duration * 0.15));
-
-      if (isMichael) {
-        interval = Math.min(
-          0.5,
-          Math.max(
-            0.34,
-            (duration - first - 0.8) / 48
-          )
-        );
-
-        total = Math.max(
-          1,
-          Math.min(
-            48,
-            Math.floor(
-              (duration - first - 0.4) /
-              interval
-            )
-          )
-        );
-      } else if (isElvis) {
-        interval = Math.min(
-          0.78,
-          Math.max(
-            0.56,
-            (duration - first - 0.8) / 36
-          )
-        );
-
-        total = Math.max(
-          1,
-          Math.min(
-            36,
-            Math.floor(
-              (duration - first - 0.4) /
-              interval
-            )
-          )
-        );
-      } else {
-        interval = Math.min(
-          1.1,
-          Math.max(
-            0.38,
-            (duration - first - 0.8) / 25
-          )
-        );
-
-        total = Math.max(
-          1,
-          Math.min(
-            24,
-            Math.floor(
-              (duration - first - 0.4) /
-              interval
-            )
-          )
-        );
-      }
+    if (Number.isFinite(duration) && duration > 0) {
+      first = isMichael ? 2.2 : Math.min(3, Math.max(0.5, duration * 0.15));
+      if (isMichael) interval = Math.min(0.5, Math.max(0.34, (duration - first - 0.8) / 48));
+      else if (isElvis) interval = Math.min(0.78, Math.max(0.56, (duration - first - 0.8) / 36));
+      else interval = Math.min(1.1, Math.max(0.38, (duration - first - 0.8) / 25));
+      total = Math.max(1, Math.min(total, Math.floor((duration - first - 0.4) / interval)));
     }
-
-    const starIndex = total >= 8
-      ? Math.floor(
-          total *
-          (0.35 + Math.random() * 0.3)
-        )
-      : -1;
-
+    const starIndex = total >= 8 ? Math.floor(total * (0.35 + Math.random() * 0.3)) : -1;
     this.notes = [];
-
     let previousLane = -1;
-
     for (let i = 0; i < total; i++) {
-      let lane = Math.floor(
-        Math.random() *
-        this.notePositions.length
-      );
-
-      if (lane === previousLane) {
-        lane = (
-          lane +
-          1 +
-          Math.floor(Math.random() * 3)
-        ) % this.notePositions.length;
-      }
-
+      let lane = Math.floor(Math.random() * this.notePositions.length);
+      if (lane === previousLane) lane = (lane + 1 + Math.floor(Math.random() * 3)) % this.notePositions.length;
       previousLane = lane;
-
       this.notes.push({
         id: i,
         x: this.notePositions[lane],
-        type: i === starIndex
-          ? "star"
-          : this.randomType(),
+        type: i === starIndex ? "star" : this.randomType(),
         time: first + i * interval,
         status: "pending",
         firstClickTime: null
@@ -1602,23 +1462,30 @@ if (
 
   startRhythm(mode = "tutorial") {
     this.battleMode = mode;
-
     this.musicAttempt++;
-
     this.music.pause();
     this.music.playbackRate = 1;
+    this.music.muted = false;
+    this.music.volume = 0.7;
 
     const musicPath = mode === "michael"
-      ? "./assets/Michael Jackson - Thriller.wav"
-      : "./assets/Queen - Another One Bites The Dust.wav";
+      ? this.michaelMusicPath
+      : mode === "elvis"
+        ? this.elvisMusicPath
+        : this.tutorialMusicPath;
 
-    if (this.currentMusicPath !== musicPath) {
+    this.musicStartOffset = mode === "michael"
+      ? this.michaelMusicStart
+      : mode === "elvis"
+        ? this.elvisMusicStart
+        : this.tutorialMusicStart;
+
+    if (this.currentMusicPath !== musicPath ||
+        this.music.src !== new URL(musicPath, document.baseURI).href) {
       this.currentMusicPath = musicPath;
       this.music.src = musicPath;
       this.music.load();
     }
-
-    this.musicStartOffset = mode === "michael" ? 35 : 0;
 
     try {
       this.music.currentTime = 0;
@@ -1626,130 +1493,137 @@ if (
       console.warn(error);
     }
 
-    if (
-      typeof this.alien.stopDance ===
-      "function"
-    ) {
+    if (typeof this.alien.stopDance === "function") {
       this.alien.stopDance();
     }
 
     this.elvisDanceFrame = 0;
     this.elvisDanceTimer = 0;
-
+    this.michaelDanceFrame = 0;
+    this.michaelDanceTimer = 0;
+    this.musicError = false;
+    this.audioStarted = false;
+    this.loadingRhythm = false;
     this.state = "rhythmIntro";
-
-    this.wasInteracting =
-      this.player.wantsToInteract();
+    this.wasInteracting = this.player.wantsToInteract();
   }
 
   beginRhythm() {
-    if (
-      this.state !== "rhythmIntro"
-    ) {
-      return;
-    }
+    if (this.state !== "rhythmIntro" || this.loadingRhythm) return;
 
+    this.loadingRhythm = true;
     this.musicAttempt++;
     const attemptId = this.musicAttempt;
 
-    this.score = 0;
-    this.combo = 0;
-    this.bestCombo = 0;
-
-    this.hits = 0;
-    this.misses = 0;
-    this.totalMisses = 0;
-    this.avoidedTraps = 0;
-
-    this.rhythmTime = 0;
-    this.fallbackTime = 0;
-    this.effects = [];
-
-    this.elvisDanceFrame = 0;
-    this.elvisDanceTimer = 0;
-    this.michaelDanceFrame = 0;
-    this.michaelDanceTimer = 0;
-
-    this.feedback = "¡PREPÁRATE!";
-    this.feedbackColor = "#a6ff00";
-    this.feedbackTimer = 1.5;
-
-    this.speedEffectUntil = 0;
-    this.result = "";
-
     this.music.pause();
     this.music.playbackRate = 1;
-
+    this.music.muted = false;
+    this.music.volume = 0.7;
     this.musicError = false;
     this.audioStarted = false;
 
-    this.buildChart();
+    const startBattle = () => {
+      if (attemptId !== this.musicAttempt || this.state !== "rhythmIntro") {
+        this.loadingRhythm = false;
+        return;
+      }
 
-    this.state = "rhythm";
+      if (Number.isFinite(this.music.duration)) {
+        this.musicStartOffset = Math.min(
+          Math.max(0, this.musicStartOffset),
+          Math.max(0, this.music.duration - 1)
+        );
+      }
 
-    if (
-      this.battleMode === "tutorial" &&
-      typeof this.alien.startDance ===
-        "function"
-    ) {
-      this.alien.startDance();
+      try {
+        this.music.currentTime = this.musicStartOffset;
+      } catch (error) {
+        console.warn(error);
+      }
+
+      this.score = 0;
+      this.combo = 0;
+      this.bestCombo = 0;
+      this.hits = 0;
+      this.misses = 0;
+      this.totalMisses = 0;
+      this.avoidedTraps = 0;
+      this.rhythmTime = 0;
+      this.fallbackTime = 0;
+      this.effects = [];
+      this.elvisDanceFrame = 0;
+      this.elvisDanceTimer = 0;
+      this.michaelDanceFrame = 0;
+      this.michaelDanceTimer = 0;
+      this.playerDanceFrame = 0;
+      this.playerDanceTimer = 0;
+      this.feedback = "¡PREPÁRATE!";
+      this.feedbackColor = "#a6ff00";
+      this.feedbackTimer = 1.5;
+      this.speedEffectUntil = 0;
+      this.result = "";
+      this.buildChart();
+      this.state = "rhythm";
+      this.loadingRhythm = false;
+
+      if (this.battleMode === "tutorial" &&
+          typeof this.alien.startDance === "function") {
+        this.alien.startDance();
+      }
+
+      if (this.musicError) {
+        this.showFeedback("MODO PRÁCTICA SIN AUDIO", "#ffdc69");
+      }
+    };
+
+    const onMetadata = () => {
+      cleanup();
+      if (attemptId !== this.musicAttempt) return;
+      startBattle();
+    };
+
+    const onError = () => {
+      cleanup();
+      if (attemptId !== this.musicAttempt) return;
+      console.error("No se pudo cargar la canción:", this.music.currentSrc || this.music.src);
+      this.musicError = true;
+      startBattle();
+    };
+
+    const cleanup = () => {
+      this.music.removeEventListener("loadedmetadata", onMetadata);
+      this.music.removeEventListener("error", onError);
+    };
+
+    if (this.music.readyState >= 1) {
+      startBattle();
+    } else {
+      this.music.addEventListener("loadedmetadata", onMetadata);
+      this.music.addEventListener("error", onError);
     }
 
-    const playbackReady =
-      this.musicStartOffset > 0 &&
-      this.music.readyState < 1 &&
-      !this.music.error
-        ? new Promise((resolve, reject) => {
-            this.music.addEventListener("loadedmetadata", resolve, { once: true });
-            this.music.addEventListener("error", reject, { once: true });
-          })
-        : Promise.resolve();
-
-    playbackReady
-      .then(() => {
-        if (attemptId !== this.musicAttempt) {
-          return false;
-        }
-
-        if (this.musicStartOffset > 0) {
-          this.music.currentTime = this.musicStartOffset;
-        }
-
-        return this.music.play();
-      })
-      .then(result => {
-        if (
-          result === false ||
-          attemptId !== this.musicAttempt
-        ) {
-          return;
-        }
-
+    const playback = this.music.play();
+    if (playback && typeof playback.then === "function") {
+      playback.then(() => {
+        if (attemptId !== this.musicAttempt) return;
         this.audioStarted = true;
-
         if (this.state === "paused") {
           this.music.pause();
           this.musicWasPlaying = true;
         }
-      })
-      .catch(error => {
-        if (
-          attemptId !== this.musicAttempt
-        ) {
-          return;
-        }
-
-        console.warn(error);
-
+      }).catch(error => {
+        if (attemptId !== this.musicAttempt) return;
+        console.error("No se pudo reproducir la canción:", this.music.currentSrc || this.music.src, error);
+        this.musicError = true;
         if (this.state === "rhythm") {
-          this.musicError = true;
-
-          this.showFeedback(
-            "MODO PRÁCTICA SIN AUDIO",
-            "#ffdc69"
-          );
+          this.showFeedback("MODO PRÁCTICA SIN AUDIO", "#ffdc69");
         }
       });
+    }
+
+    if (this.music.readyState < 1 && this.music.networkState === 3) {
+      onError();
+    }
   }
 
   getRhythmTime(deltaTime) {
@@ -2194,42 +2068,19 @@ if (
   }
 
   endRhythm(won) {
-    if (
-      this.state !== "rhythm"
-    ) {
-      return;
-    }
-
+    if (this.state !== "rhythm") return;
     this.musicAttempt++;
-
     this.music.pause();
     this.music.playbackRate = 1;
-
     this.speedEffectUntil = 0;
-
-    if (
-      typeof this.alien.stopDance ===
-      "function"
-    ) {
-      this.alien.stopDance();
-    }
-
-    this.result = won
-      ? "victory"
-      : "defeat";
-
-    if (
-      this.battleMode === "elvis"
-    ) {
-      if (won) {
-        this.elvisDefeated = true;
-      }
-
+    if (typeof this.alien.stopDance === "function") this.alien.stopDance();
+    this.result = won ? "victory" : "defeat";
+    if (this.battleMode === "elvis") {
+      if (won) this.elvisDefeated = true;
       this.state = "rhythmEnd";
     } else if (this.battleMode === "michael") {
-      this.state = won
-        ? "victoryDialogue"
-        : "rhythmEnd";
+      if (won) this.michaelDefeated = true;
+      this.state = "rhythmEnd";
     } else if (won) {
       this.tutorialCompleted = true;
       this.state = "victoryDialogue";
@@ -2623,10 +2474,9 @@ if (
   drawDialogueBox(speaker, text, hint) {
     const ctx = this.context;
 
-    const color =
-      speaker === "FREDDIE"
-        ? "#a6ff00"
-        : "#53ddff";
+    const color = speaker === "FREDDIE"
+      ? "#a6ff00" : speaker === "ELVIS"
+        ? "#ffdc69" : "#53ddff";
 
     ctx.fillStyle =
       "rgba(3,2,15,0.55)";
@@ -2700,6 +2550,10 @@ if (
       this.drawCredits();
     } else if (this.state === "dialogue") {
       this.drawDialogue();
+    } else if (this.state === "elvisDialogue") {
+      this.drawElvisDialogue();
+    } else if (this.state === "elvisVictoryDialogue") {
+      this.drawElvisVictoryDialogue();
     } else if (
       this.state === "victoryDialogue"
     ) {
@@ -2848,6 +2702,26 @@ if (
         ? "CLIC PARA INICIAR EL TUTORIAL >"
         : "CLIC PARA CONTINUAR >"
     );
+  }
+
+  drawElvisDialogue() {
+    this.drawInvestigationBackground();
+    this.drawElvis(this.elvisPosition.x, this.elvisPosition.y,
+      this.elvisPosition.width, this.elvisPosition.height);
+    this.player.draw(this.context);
+    const entry = this.elvisDialogues[this.elvisDialogueIndex];
+    if (!entry) return;
+    this.drawDialogueBox(entry.speaker, entry.text,
+      this.elvisDialogueIndex === this.elvisDialogues.length - 1
+        ? "CLIC PARA INICIAR LA BATALLA >" : "CLIC PARA CONTINUAR >");
+  }
+
+  drawElvisVictoryDialogue() {
+    this.drawInvestigationBackground();
+    this.drawElvis(this.elvisPosition.x, this.elvisPosition.y,
+      this.elvisPosition.width, this.elvisPosition.height);
+    this.player.draw(this.context);
+    this.drawDialogueBox("ELVIS", this.elvisVictoryText, "CLIC PARA CONTINUAR >");
   }
 
   drawVictoryDialogue() {
@@ -3170,7 +3044,7 @@ if (
       ctx.fillText(
         this.elvisDefeated
           ? "Presiona E para volver a desafiar a Elvis"
-          : "Presiona E para desafiar a Elvis",
+          : "Presiona E para hablar con Elvis",
         640,
         690
       );
@@ -3213,6 +3087,10 @@ if (
       this.previousState === "dialogue"
     ) {
       this.drawDialogue();
+    } else if (this.previousState === "elvisDialogue") {
+      this.drawElvisDialogue();
+    } else if (this.previousState === "elvisVictoryDialogue") {
+      this.drawElvisVictoryDialogue();
     } else if (
       this.previousState === "victoryDialogue"
     ) {
@@ -3986,103 +3864,54 @@ if (
 
   drawRhythmEnd() {
     const ctx = this.context;
-
     this.drawRhythmBackground();
-
-    ctx.fillStyle =
-      "rgba(7,4,26,0.92)";
-
+    ctx.fillStyle = "rgba(7,4,26,0.92)";
     ctx.fillRect(0, 0, 1280, 720);
-
     this.drawCharacters();
-
     ctx.textAlign = "center";
-
-    const victory =
-      this.result === "victory";
-
-    ctx.fillStyle = victory
-      ? "#a6ff00"
-      : "#ff576d";
-
+    const victory = this.result === "victory";
+    ctx.fillStyle = victory ? "#a6ff00" : "#ff576d";
     ctx.font = "bold 37px Silkscreen";
-
-    let title = "";
-
-    if (this.battleMode === "michael") {
-      title = victory
-        ? "¡VICTORIA CONTRA MICHAEL!"
-        : "¡MICHAEL TE HA DERROTADO!";
-    } else if (
-      this.battleMode === "elvis"
-    ) {
-      title = victory
-        ? "¡VICTORIA CONTRA ELVIS!"
-        : "¡ELVIS TE HA DERROTADO!";
-    } else {
-      title = victory
-        ? "¡TUTORIAL COMPLETADO!"
-        : "¡HAS PERDIDO!";
-    }
-
-    ctx.fillText(
-      title,
-      640,
-      220
-    );
-
+    const title = this.battleMode === "michael"
+      ? (victory ? "¡VICTORIA CONTRA MICHAEL!" : "¡MICHAEL TE HA DERROTADO!")
+      : this.battleMode === "elvis"
+        ? (victory ? "¡VICTORIA CONTRA ELVIS!" : "¡ELVIS TE HA DERROTADO!")
+        : (victory ? "¡TUTORIAL COMPLETADO!" : "¡HAS PERDIDO!");
+    ctx.fillText(title, 640, 220);
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 29px Silkscreen";
-
-    ctx.fillText(
-      `PUNTUACIÓN ${this.score}`,
-      640,
-      305
-    );
-
+    ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 305);
     ctx.font = "20px Silkscreen";
-
-    ctx.fillText(
-      `Aciertos: ${this.hits}`,
-      640,
-      365
-    );
-
-    ctx.fillText(
-      `Errores consecutivos: ${this.misses}`,
-      640,
-      405
-    );
-
-    ctx.fillText(
-      `Errores totales: ${this.totalMisses}`,
-      640,
-      445
-    );
-
-    const button = this.buttons.restart;
-
-    ctx.fillStyle = "#a6ff00";
-
-    ctx.fillRect(
-      button.x,
-      button.y,
-      button.width,
-      button.height
-    );
-
-    ctx.fillStyle = "#101225";
-    ctx.font = "bold 22px Silkscreen";
-
-    ctx.fillText(
-      victory &&
-      this.battleMode === "elvis"
-        ? "JUGAR DE NUEVO"
-        : "VOLVER A JUGAR",
-      640,
-      540
-    );
-
+    ctx.fillText(`Aciertos: ${this.hits}`, 640, 365);
+    ctx.fillText(`Errores consecutivos: ${this.misses}`, 640, 405);
+    ctx.fillText(`Errores totales: ${this.totalMisses}`, 640, 445);
+    const wonBattle = victory && (this.battleMode === "elvis" || this.battleMode === "michael");
+    if (wonBattle) {
+      const restart = this.buttons.battleRestart;
+      ctx.fillStyle = "#a6ff00";
+      ctx.fillRect(restart.x, restart.y, restart.width, restart.height);
+      ctx.fillStyle = "#101225";
+      ctx.font = "bold 18px Silkscreen";
+      ctx.fillText("JUGAR DE NUEVO", restart.x + restart.width / 2, restart.y + 46);
+      const explore = this.buttons.explore;
+      ctx.fillStyle = "#53ddff";
+      ctx.fillRect(explore.x, explore.y, explore.width, explore.height);
+      ctx.fillStyle = "#101225";
+      ctx.font = "bold 17px Silkscreen";
+      ctx.fillText("SEGUIR EXPLORANDO", explore.x + explore.width / 2, explore.y + 46);
+    } else {
+      const button = this.buttons.restart;
+      ctx.fillStyle = "#a6ff00";
+      ctx.fillRect(button.x, button.y, button.width, button.height);
+      ctx.fillStyle = "#101225";
+      ctx.font = "bold 22px Silkscreen";
+      ctx.fillText("VOLVER A JUGAR", button.x + button.width / 2, button.y + 45);
+    }
     this.drawBackButton();
   }
+
 }
+
+
+
+
