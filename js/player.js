@@ -3,8 +3,8 @@ export class Player {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.width = 200;
-    this.height = 200;
+    this.width = 210;
+    this.height = 240;
     this.speed = 220;
 
     this.keys = new Set();
@@ -73,7 +73,7 @@ export class Player {
       front: "./assets/Player/walking_front",
       back: "./assets/Player/walking_back",
       left: "./assets/Player/walking_left",
-      right: "./assets/Player/walking-right"
+      right: "./assets/Player/walking_right"
     };
 
     for (const [direction, path] of Object.entries(animations)) {
