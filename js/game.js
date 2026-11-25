@@ -22,6 +22,7 @@ export class Game {
     this.bachStatueImage = this.loadImage("./assets/Mini estatua Bach.png");
     this.princeStatueImage = this.loadImage("./assets/Mini Statua Price.png");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
+    this.discoRoom = this.loadImage("./assets/Sala disco.png");
     this.elvisSprite = this.loadImage("./assets/Alien/Elvis3.png");
 
     this.elvisDanceSprites = [];
@@ -140,6 +141,57 @@ this.hallway02WalkableArea = [
     ];
 
     this.activeStatue = null;
+
+    this.hallway02DiscoDoor = {
+      x: 55,
+      y: 650,
+      radius: 210
+    };
+
+    this.discoSpawn = {
+      x: 55,
+      y: 650
+    };
+
+    this.discoWalkableArea = [
+      { x: 0, y: 520 },
+      { x: 1280, y: 600 },
+      { x: 1280, y: 720 },
+      { x: 0, y: 720 }
+    ];
+
+    this.discoBlockedPolygons = [
+      [
+        { x: 0, y: 350 },
+        { x: 450, y: 350 },
+        { x: 450, y: 535 },
+        { x: 405, y: 575 },
+        { x: 0, y: 555 }
+      ],
+      [
+        { x: 480, y: 390 },
+        { x: 800, y: 390 },
+        { x: 800, y: 510 },
+        { x: 760, y: 525 },
+        { x: 500, y: 525 },
+        { x: 480, y: 510 }
+      ],
+      [
+        { x: 820, y: 425 },
+        { x: 1150, y: 425 },
+        { x: 1150, y: 550 },
+        { x: 1100, y: 575 },
+        { x: 865, y: 560 },
+        { x: 820, y: 535 }
+      ],
+      [
+        { x: 1180, y: 430 },
+        { x: 1280, y: 430 },
+        { x: 1280, y: 530 },
+        { x: 1230, y: 545 },
+        { x: 1180, y: 520 }
+      ]
+    ];
 
     this.investigationExitDoor = {
       x: 100,
@@ -425,7 +477,8 @@ this.hallway02WalkableArea = [
             "victoryDialogue",
             "hallway",
             "hallway02",
-            "investigation"
+            "investigation",
+            "disco"
           ].includes(this.state)
         ) {
           this.pauseGame();
@@ -515,6 +568,10 @@ this.hallway02WalkableArea = [
 
     if (this.state === "hallway02") {
       this.updateHallway02(deltaTime);
+    }
+
+    if (this.state === "disco") {
+      this.updateDisco(deltaTime);
     }
 
     if (this.state === "investigation") {
@@ -888,12 +945,37 @@ this.hallway02WalkableArea = [
       }
     );
 
-    const nearbyStatue = this.getNearbyHallway02Statue();
+    const nearDiscoDoor = this.isNearHallway02DiscoDoor();
+    const nearbyStatue = nearDiscoDoor
+      ? null
+      : this.getNearbyHallway02Statue();
+
+    if (
+      interacting &&
+      !this.wasInteracting &&
+      nearDiscoDoor
+    ) {
+      this.enterDiscoRoom();
+      return;
+    }
 
     if (interacting && !this.wasInteracting && nearbyStatue) {
       this.activeStatue = nearbyStatue;
+      this.wasInteracting = interacting;
+      return;
     }
 
+    this.wasInteracting = interacting;
+  }
+
+  updateDisco(deltaTime) {
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => this.isDiscoPositionAllowed(x, y)
+    );
+
+    const interacting = this.player.wantsToInteract();
     this.wasInteracting = interacting;
   }
 
@@ -909,6 +991,14 @@ this.hallway02WalkableArea = [
         feet.y - statue.y
       ) <= statue.radius
     ) || null;
+  }
+
+  isNearHallway02DiscoDoor() {
+    const feet = this.player.getFootPosition(this.player.x, this.player.y);
+    return Math.hypot(
+      feet.x - this.hallway02DiscoDoor.x,
+      feet.y - this.hallway02DiscoDoor.y
+    ) <= this.hallway02DiscoDoor.radius;
   }
 
   isNearInvestigationExit() {
@@ -1003,6 +1093,28 @@ this.hallway02WalkableArea = [
 
     this.wasInteracting =
       this.player.wantsToInteract();
+  }
+
+  enterDiscoRoom() {
+    this.setPlayerFeetPosition(this.discoSpawn.x, this.discoSpawn.y);
+    this.state = "disco";
+    this.wasInteracting = this.player.wantsToInteract();
+  }
+
+  isDiscoPositionAllowed(x, y) {
+    const feet = this.player.getFootPosition(x, y);
+
+    if (!this.isPointInsidePolygon(feet, this.discoWalkableArea)) {
+      return false;
+    }
+
+    for (const polygon of this.discoBlockedPolygons) {
+      if (this.isPointInsidePolygon(feet, polygon)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   startDialogue() {
@@ -2006,6 +2118,10 @@ if (
     this.drawImageBackground(this.hallway02Image);
   }
 
+  drawDiscoBackground() {
+    this.drawImageBackground(this.discoRoom);
+  }
+
   drawInvestigationBackground() {
     this.drawImageBackground(
       this.investigationRoom
@@ -2326,6 +2442,10 @@ if (
       this.state === "investigation"
     ) {
       this.drawInvestigation();
+    } else if (
+      this.state === "disco"
+    ) {
+      this.drawDisco();
     } else {
       this.drawGame();
     }
@@ -2514,18 +2634,19 @@ if (
       return;
     }
 
-    if (this.getNearbyHallway02Statue()) {
+    if (this.isNearHallway02DiscoDoor()) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 20px Silkscreen";
-
-      ctx.fillText(
-        "PRESIONA E PARA OBSERVAR",
-        640,
-        675
-      );
-
+      ctx.fillText("PRESIONA E PARA ENTRAR A LA SALA", 640, 675);
+      ctx.restore();
+    } else if (this.getNearbyHallway02Statue()) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px Silkscreen";
+      ctx.fillText("PRESIONA E PARA OBSERVAR", 640, 675);
       ctx.restore();
     }
   }
@@ -2583,6 +2704,13 @@ if (
     );
 
     ctx.restore();
+  }
+
+  drawDisco() {
+    const ctx = this.context;
+    this.drawDiscoBackground();
+    this.player.draw(ctx);
+
   }
 
   drawInvestigation() {
@@ -2682,6 +2810,10 @@ if (
       this.previousState === "investigation"
     ) {
       this.drawInvestigation();
+    } else if (
+      this.previousState === "disco"
+    ) {
+      this.drawDisco();
     }
 
     ctx.fillStyle =
