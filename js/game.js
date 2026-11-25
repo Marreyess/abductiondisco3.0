@@ -19,6 +19,8 @@ export class Game {
 
     this.hallwayImage = this.loadImage("./assets/Pasillo01.png");
     this.hallway02Image = this.loadImage("./assets/Pasillo02.png");
+    this.bachStatueImage = this.loadImage("./assets/Mini estatua Bach.png");
+    this.princeStatueImage = this.loadImage("./assets/Mini Statua Price.png");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
     this.elvisSprite = this.loadImage("./assets/Alien/Elvis3.png");
 
@@ -119,6 +121,25 @@ this.hallway02WalkableArea = [
       x: 1030,
       y: 565
     };
+
+    this.hallway02Statues = [
+      {
+        x: 930,
+        y: 565,
+        radius: 135,
+        image: this.bachStatueImage,
+        dialogue: "Vaya, parece un músico de otra época con esa peluca y esa vestimenta, seguro que componía piezas bastante elegantes. Me pregunto cómo sonaría su música."
+      },
+      {
+        x: 330,
+        y: 565,
+        radius: 135,
+        image: this.princeStatueImage,
+        dialogue: "¡Qué estilo! Parece que sabía muy bien cómo llamar la atención, con esa guitarra seguro que hacía vibrar todo el escenario."
+      }
+    ];
+
+    this.activeStatue = null;
 
     this.investigationExitDoor = {
       x: 100,
@@ -843,12 +864,22 @@ this.hallway02WalkableArea = [
   }
 
   updateHallway02(deltaTime) {
+    const interacting = this.player.wantsToInteract();
+
+    if (this.activeStatue) {
+      if (interacting && !this.wasInteracting) {
+        this.activeStatue = null;
+      }
+
+      this.wasInteracting = interacting;
+      return;
+    }
+
     this.player.update(
       deltaTime,
       this.canvas,
       (x, y) => {
-        const feet =
-          this.player.getFootPosition(x, y);
+        const feet = this.player.getFootPosition(x, y);
 
         return this.isPointInsidePolygon(
           feet,
@@ -857,8 +888,27 @@ this.hallway02WalkableArea = [
       }
     );
 
-    this.wasInteracting =
-      this.player.wantsToInteract();
+    const nearbyStatue = this.getNearbyHallway02Statue();
+
+    if (interacting && !this.wasInteracting && nearbyStatue) {
+      this.activeStatue = nearbyStatue;
+    }
+
+    this.wasInteracting = interacting;
+  }
+
+  getNearbyHallway02Statue() {
+    const feet = this.player.getFootPosition(
+      this.player.x,
+      this.player.y
+    );
+
+    return this.hallway02Statues.find(statue =>
+      Math.hypot(
+        feet.x - statue.x,
+        feet.y - statue.y
+      ) <= statue.radius
+    ) || null;
   }
 
   isNearInvestigationExit() {
@@ -2454,8 +2504,85 @@ if (
   }
 
   drawHallway02() {
+    const ctx = this.context;
+
     this.drawHallway02Background();
-    this.player.draw(this.context);
+    this.player.draw(ctx);
+
+    if (this.activeStatue) {
+      this.drawStatueDialogue();
+      return;
+    }
+
+    if (this.getNearbyHallway02Statue()) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px Silkscreen";
+
+      ctx.fillText(
+        "PRESIONA E PARA OBSERVAR",
+        640,
+        675
+      );
+
+      ctx.restore();
+    }
+  }
+
+  drawStatueDialogue() {
+    const ctx = this.context;
+    const statue = this.activeStatue;
+
+    if (!statue) return;
+
+    ctx.save();
+
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    this.drawContainedImage(statue.image, {
+      x: 410,
+      y: 95,
+      width: 460,
+      height: 340
+    });
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.font = "21px Silkscreen";
+
+    const words = statue.dialogue.split(" ");
+    const lines = [];
+    let line = "";
+
+    for (const word of words) {
+      const testLine = line ? `${line} ${word}` : word;
+
+      if (ctx.measureText(testLine).width > 610 && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = testLine;
+      }
+    }
+
+    if (line) lines.push(line);
+
+    lines.forEach((text, index) => {
+      ctx.fillText(text, 640, 485 + index * 32);
+    });
+
+    ctx.fillStyle = "#a6ff00";
+    ctx.font = "16px Silkscreen";
+
+    ctx.fillText(
+      "PRESIONA E PARA CONTINUAR",
+      640,
+      615
+    );
+
+    ctx.restore();
   }
 
   drawInvestigation() {
