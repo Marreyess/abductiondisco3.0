@@ -18,6 +18,7 @@ export class Game {
     this.comicImage = this.loadImage("./assets/Comic_Inicio.png");
 
     this.hallwayImage = this.loadImage("./assets/Pasillo01.png");
+    this.hallway02Image = this.loadImage("./assets/Pasillo02.png");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
     this.elvisSprite = this.loadImage("./assets/Alien/Elvis3.png");
 
@@ -104,6 +105,26 @@ export class Game {
       { x: 1280, y: 720 },
       { x: 0, y: 720 }
     ];
+
+    
+this.hallway02WalkableArea = [
+  { x: 0, y: 525 },
+  { x: 1280, y: 525 },
+  { x: 1280, y: 720 },
+  { x: 0, y: 720 }
+];
+
+
+    this.hallway02Spawn = {
+      x: 1030,
+      y: 565
+    };
+
+    this.investigationExitDoor = {
+      x: 100,
+      y: 650,
+      radius: 115
+    };
 
     this.hallwaySpawn = {
       x: 1030,
@@ -382,6 +403,7 @@ export class Game {
             "rhythmEnd",
             "victoryDialogue",
             "hallway",
+            "hallway02",
             "investigation"
           ].includes(this.state)
         ) {
@@ -468,6 +490,10 @@ export class Game {
 
     if (this.state === "hallway") {
       this.updateHallway(deltaTime);
+    }
+
+    if (this.state === "hallway02") {
+      this.updateHallway02(deltaTime);
     }
 
     if (this.state === "investigation") {
@@ -797,6 +823,16 @@ export class Game {
     if (
       interacting &&
       !this.wasInteracting &&
+      this.elvisDefeated &&
+      this.isNearInvestigationExit()
+    ) {
+      this.enterHallway02();
+      return;
+    }
+
+    if (
+      interacting &&
+      !this.wasInteracting &&
       this.isNearElvis()
     ) {
       this.startRhythm("elvis");
@@ -804,6 +840,37 @@ export class Game {
     }
 
     this.wasInteracting = interacting;
+  }
+
+  updateHallway02(deltaTime) {
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => {
+        const feet =
+          this.player.getFootPosition(x, y);
+
+        return this.isPointInsidePolygon(
+          feet,
+          this.hallway02WalkableArea
+        );
+      }
+    );
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
+  }
+
+  isNearInvestigationExit() {
+    const feet = this.player.getFootPosition(
+      this.player.x,
+      this.player.y
+    );
+
+    return Math.hypot(
+      feet.x - this.investigationExitDoor.x,
+      feet.y - this.investigationExitDoor.y
+    ) <= this.investigationExitDoor.radius;
   }
 
   isNearDoor() {
@@ -876,6 +943,18 @@ export class Game {
       this.player.wantsToInteract();
   }
 
+  enterHallway02() {
+    this.setPlayerFeetPosition(
+      this.hallway02Spawn.x,
+      this.hallway02Spawn.y
+    );
+
+    this.state = "hallway02";
+
+    this.wasInteracting =
+      this.player.wantsToInteract();
+  }
+
   startDialogue() {
     this.dialogueIndex = 0;
     this.state = "dialogue";
@@ -913,14 +992,19 @@ export class Game {
     const feet =
       this.player.getFootPosition(x, y);
 
-    if (
-      !this.isPointInsidePolygon(
-        feet,
-        this.walkableArea
-      )
-    ) {
-      return false;
-    }
+    const currentWalkableArea =
+  this.state === "hallway02"
+    ? this.hallway02WalkableArea
+    : this.walkableArea;
+
+if (
+  !this.isPointInsidePolygon(
+    feet,
+    currentWalkableArea
+  )
+) {
+  return false;
+}
 
     for (const area of this.blockedAreas) {
       if (
@@ -1868,6 +1952,10 @@ export class Game {
     this.drawImageBackground(this.hallwayImage);
   }
 
+  drawHallway02Background() {
+    this.drawImageBackground(this.hallway02Image);
+  }
+
   drawInvestigationBackground() {
     this.drawImageBackground(
       this.investigationRoom
@@ -2181,6 +2269,10 @@ export class Game {
     ) {
       this.drawHallway();
     } else if (
+      this.state === "hallway02"
+    ) {
+      this.drawHallway02();
+    } else if (
       this.state === "investigation"
     ) {
       this.drawInvestigation();
@@ -2361,6 +2453,11 @@ export class Game {
     }
   }
 
+  drawHallway02() {
+    this.drawHallway02Background();
+    this.player.draw(this.context);
+  }
+
   drawInvestigation() {
     const ctx = this.context;
 
@@ -2388,6 +2485,25 @@ export class Game {
         this.elvisDefeated
           ? "Presiona E para volver a desafiar a Elvis"
           : "Presiona E para desafiar a Elvis",
+        640,
+        690
+      );
+
+      ctx.restore();
+    }
+
+    if (
+      this.elvisDefeated &&
+      this.isNearInvestigationExit()
+    ) {
+      ctx.save();
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#a6ff00";
+      ctx.font = "bold 18px Silkscreen";
+
+      ctx.fillText(
+        "Presiona E para pasar al Pasillo02",
         640,
         690
       );
@@ -2431,6 +2547,10 @@ export class Game {
       this.previousState === "hallway"
     ) {
       this.drawHallway();
+    } else if (
+      this.previousState === "hallway02"
+    ) {
+      this.drawHallway02();
     } else if (
       this.previousState === "investigation"
     ) {
