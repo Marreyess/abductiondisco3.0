@@ -24,6 +24,14 @@ export class Game {
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
     this.discoRoom = this.loadImage("./assets/Sala disco.png");
     this.michaelSprite = this.loadImage("./assets/Alien/Alien Michael J.png");
+    this.michaelDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Michael J.PNG");
+    this.playerDialoguePortrait = this.loadImage("./assets/Player/Dialogo_player.png");
+    this.playerDanceSprites = [1, 2, 3, 4, 6, 7, 8].map(frame =>
+      this.loadImage(`./assets/Player/dance${String(frame).padStart(2, "0")}.png`)
+    );
+    this.playerDanceFrame = 0;
+    this.playerDanceTimer = 0;
+    this.playerDanceFrameDuration = 0.14;
     this.michaelDanceSprites = [];
 
     for (let i = 1; i <= 8; i++) {
@@ -37,6 +45,7 @@ export class Game {
     this.michaelDanceTimer = 0;
     this.michaelDanceFrameDuration = 0.12;
     this.michaelDefeated = false;
+    this.activeMichaelDialogue = -1;
 
     this.elvisSprite = this.loadImage("./assets/Alien/Elvis3.png");
 
@@ -182,6 +191,13 @@ this.hallway02WalkableArea = [
       height: 235,
       radius: 145
     };
+
+    this.michaelDialogue = [
+      "Oh, así que tú eres quien está causando revuelo por toda la nave. Créeme, aquí todos sabemos quién eres… y también a dónde te diriges.",
+      "Pero no creas que vas a pasar tan fácilmente, cariño. Primero tendrás que demostrar que puedes seguir mi ritmo. ¡Hee-hee!"
+    ];
+
+    this.michaelVictoryText = "¡Vaya, tienes unos pasos fantásticos! Te dejaré pasar esta vez, pero te advierto que salir de aquí no será tan sencillo. ¡Hee-hee!";
 
     this.discoBlockedPolygons = [
       [
@@ -490,11 +506,39 @@ this.hallway02WalkableArea = [
       slider: null
     };
 
+    this.canvas.addEventListener("click", () => {
+      if (this.state === "disco" && this.activeMichaelDialogue >= 0) {
+        this.activeMichaelDialogue++;
+
+        if (this.activeMichaelDialogue >= this.michaelDialogue.length) {
+          this.activeMichaelDialogue = -1;
+          this.startRhythm("michael");
+        }
+
+        return;
+      }
+
+      if (this.state === "victoryDialogue" && this.battleMode === "michael") {
+        this.finishVictoryDialogue();
+      }
+    });
+
     window.addEventListener("keydown", event => {
       if (event.key === "Escape") {
         event.preventDefault();
 
         if (event.repeat) return;
+
+        if (this.state === "disco" && this.activeMichaelDialogue >= 0) {
+          this.activeMichaelDialogue = -1;
+          this.wasInteracting = this.player.wantsToInteract();
+          return;
+        }
+
+        if (this.state === "victoryDialogue" && this.battleMode === "michael") {
+          this.finishVictoryDialogue();
+          return;
+        }
 
         if (this.state === "paused") {
           this.resumeGame();
@@ -728,6 +772,7 @@ this.hallway02WalkableArea = [
     this.tutorialCompleted = false;
     this.elvisDefeated = false;
     this.michaelDefeated = false;
+    this.activeMichaelDialogue = -1;
     this.battleMode = "tutorial";
 
     this.elvisDanceFrame = 0;
@@ -1032,6 +1077,11 @@ this.hallway02WalkableArea = [
   updateDisco(deltaTime) {
     const interacting = this.player.wantsToInteract();
 
+    if (this.activeMichaelDialogue >= 0) {
+      this.wasInteracting = interacting;
+      return;
+    }
+
     this.player.update(
       deltaTime,
       this.canvas,
@@ -1044,7 +1094,8 @@ this.hallway02WalkableArea = [
       !this.wasInteracting &&
       this.isNearMichael()
     ) {
-      this.startRhythm("michael");
+      this.activeMichaelDialogue = 0;
+      this.wasInteracting = interacting;
       return;
     }
 
@@ -1230,6 +1281,14 @@ this.hallway02WalkableArea = [
     if (
       this.state !== "victoryDialogue"
     ) {
+      return;
+    }
+
+    if (this.battleMode === "michael") {
+      this.michaelDefeated = true;
+      this.activeMichaelDialogue = -1;
+      this.state = "disco";
+      this.wasInteracting = this.player.wantsToInteract();
       return;
     }
 
@@ -1727,6 +1786,16 @@ if (
     this.rhythmTime =
       this.getRhythmTime(deltaTime);
 
+    if (this.battleMode === "michael") {
+      this.playerDanceTimer += deltaTime;
+
+      while (this.playerDanceTimer >= this.playerDanceFrameDuration) {
+        this.playerDanceTimer -= this.playerDanceFrameDuration;
+        this.playerDanceFrame =
+          (this.playerDanceFrame + 1) % this.playerDanceSprites.length;
+      }
+    }
+
     this.feedbackTimer = Math.max(
       0,
       this.feedbackTimer - deltaTime
@@ -2158,11 +2227,9 @@ if (
 
       this.state = "rhythmEnd";
     } else if (this.battleMode === "michael") {
-      if (won) {
-        this.michaelDefeated = true;
-      }
-
-      this.state = "rhythmEnd";
+      this.state = won
+        ? "victoryDialogue"
+        : "rhythmEnd";
     } else if (won) {
       this.tutorialCompleted = true;
       this.state = "victoryDialogue";
@@ -2431,7 +2498,24 @@ if (
       355 - this.player.y
     );
 
-    this.player.draw(ctx);
+    if (this.battleMode === "michael") {
+      const danceSprite = this.playerDanceSprites[this.playerDanceFrame];
+
+      if (danceSprite && danceSprite.complete && danceSprite.naturalWidth > 0) {
+        ctx.drawImage(
+          danceSprite,
+          this.player.x,
+          this.player.y,
+          this.player.width,
+          this.player.height
+        );
+      } else {
+        this.player.draw(ctx);
+      }
+    } else {
+      this.player.draw(ctx);
+    }
+
     ctx.restore();
 
     if (this.battleMode === "elvis") {
@@ -2767,6 +2851,15 @@ if (
   }
 
   drawVictoryDialogue() {
+    if (this.battleMode === "michael") {
+      this.drawDiscoBackground();
+      this.drawMichaelConversation(
+        this.michaelVictoryText,
+        "HAZ CLIC PARA TERMINAR"
+      );
+      return;
+    }
+
     this.drawDuelRoom();
 
     this.alien.draw(this.context);
@@ -2921,14 +3014,134 @@ if (
 
     this.player.draw(ctx);
 
-    if (!this.michaelDefeated && this.isNearMichael()) {
+    if (this.activeMichaelDialogue >= 0) {
+      this.drawMichaelDialogue();
+   
+    } else if (this.isNearMichael()) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 20px Silkscreen";
-      ctx.fillText("PRESIONA E PARA INICIAR LA BATALLA", 640, 675);
+      ctx.fillText("PRESIONA E PARA HABLAR", 640, 675);
       ctx.restore();
     }
+  }
+
+  drawMichaelDialogue() {
+    const dialogue = this.michaelDialogue[this.activeMichaelDialogue];
+
+    if (!dialogue) return;
+
+    this.drawMichaelConversation(
+      dialogue,
+      "HAZ CLIC PARA CONTINUAR"
+    );
+  }
+
+  drawMichaelConversation(text, hint) {
+    const ctx = this.context;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    this.drawConversationPortrait(
+      this.michaelDialoguePortrait,
+      -20,
+      -70,
+      620,
+      560,
+      1
+    );
+
+    this.drawConversationPortrait(
+      this.playerDialoguePortrait,
+      925,
+      165,
+      300,
+      325,
+      0.35
+    );
+
+    ctx.fillStyle = "rgba(5, 4, 18, 0.96)";
+    ctx.fillRect(180, 490, 920, 185);
+
+    ctx.strokeStyle = "#e85cff";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(180, 490, 920, 185);
+
+    ctx.fillStyle = "#ff8cff";
+    ctx.textAlign = "left";
+    ctx.font = "bold 23px Silkscreen";
+    ctx.fillText("ALIEN MICHAEL JACKSON", 220, 530);
+
+    ctx.fillStyle = "#777b8f";
+    ctx.textAlign = "right";
+    ctx.font = "bold 17px Silkscreen";
+    ctx.fillText("NOAH", 1060, 530);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "left";
+    ctx.font = "19px Silkscreen";
+
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
+
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+
+      if (ctx.measureText(candidate).width > 830 && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+
+    if (line) lines.push(line);
+
+    lines.slice(0, 3).forEach((lineText, index) => {
+      ctx.fillText(lineText, 220, 572 + index * 28);
+    });
+
+    ctx.fillStyle = "#ff8cff";
+    ctx.textAlign = "right";
+    ctx.font = "15px Silkscreen";
+    ctx.fillText(hint, 1070, 650);
+    ctx.restore();
+  }
+
+  drawConversationPortrait(image, x, y, width, height, opacity) {
+    const ctx = this.context;
+
+    if (
+      !image ||
+      !image.complete ||
+      image.naturalWidth === 0
+    ) {
+      return;
+    }
+
+    const scale = Math.min(
+      width / image.naturalWidth,
+      height / image.naturalHeight
+    );
+
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+      image,
+      x + (width - drawWidth) / 2,
+      y + (height - drawHeight) / 2,
+      drawWidth,
+      drawHeight
+    );
+    ctx.restore();
   }
 
   drawInvestigation() {
