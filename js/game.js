@@ -1,8 +1,3 @@
-
-
-
-
-
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 
@@ -31,6 +26,8 @@ export class Game {
     this.michaelSprite = this.loadImage("./assets/Alien/Alien Michael J.png");
     this.michaelDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Michael J.PNG");
     this.playerDialoguePortrait = this.loadImage("./assets/Player/Dialogo_player.png");
+    this.freddieuxDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Freddie.png");
+    this.elvisDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Elvis.png");
     this.playerDanceSprites = [1, 2, 3, 4, 6, 7, 8].map(frame =>
       this.loadImage(`./assets/Player/dance${String(frame).padStart(2, "0")}.png`)
     );
@@ -81,7 +78,7 @@ export class Game {
       this.playerStart.y
     );
 
-    this.alien = new Enemy(260, 410, "Freddie");
+    this.alien = new Enemy(260, 410, "Freddieux");
 
     this.elvisPosition = {
       x: 250,
@@ -284,150 +281,150 @@ this.hallway02WalkableArea = [
 
     this.dialogues = [
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "¡BLORP ZHAAA KIRIKÍÍÍ! ¡WOMBA WOMBA ZÉÉÉ!"
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿...Qué?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "¡KRAAA ZUMBA BLIP!"
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "No entendí absolutamente nada."
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "¡Por todas las estrellas! Perdón, humano, olvidé que no hablas nuestro idioma. Qué falta de consideración la mía."
       },
       {
-        speaker: "FREDDIE",
-        text: "Permíteme empezar de nuevo, querido. Mi nombre es Freddielux Mercury-9000, aunque puedes llamarme Freddie."
+        speaker: "FREDDIEUX",
+        text: "Permíteme empezar de nuevo, querido. Mi nombre es Freddieux, una estrella intergaláctica de renombre."
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Soy una estrella intergaláctica, un artista de renombre y, modestia aparte, una auténtica leyenda."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿Una estrella... qué?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Una estrella, cariño. No todos podemos ser el centro del universo, pero algunos nacimos con ese talento."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "Espera, espera... ¿Dónde estoy? ¿Y por qué estoy aquí? ¡¿Qué me hicieron?!"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Ay, querido, tantas preguntas y ni siquiera hemos llegado al estribillo."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¡¿ESTRIBILLO?! ¡ME SECUESTRARON!"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Técnicamente, te hemos realizado una invitación interplanetaria no solicitada."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¡ESO ES SECUESTRO!"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Qué poca elegancia tienes para describir una experiencia tan exclusiva."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "Bueno, ¿qué quieren de mí?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "¡Ah! Finalmente llegamos a la pregunta importante."
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Necesitamos algo que tu especie tiene y que nosotros llevamos siglos intentando comprender..."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿Qué cosa?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "¡EL RITMO, QUERIDO!"
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "...¿Me abdujeron por bailar?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "No exactamente. Aunque, después de ver cómo te mueves, tenemos mucho trabajo por delante."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "No pienso participar en nada. Quiero regresar a mi casa."
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Oh, cariño, todos queremos algo. Yo, por ejemplo, quiero un refrigerador."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿Un qué?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Un refrigerador. ¡Un buen refrigerador! ¿Tienes idea de lo complicado que es conservar las bebidas a temperatura ambiente en el espacio?"
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿Me estás hablando en serio?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Por supuesto. Soy un hombre de gustos refinados."
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Pero volviendo a lo importante... Tu misión será demostrar que los humanos todavía tienen lo necesario para dominar la pista de baile."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿Y si no quiero?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "Entonces tendremos una pequeña tragedia intergaláctica."
       },
       {
-        speaker: "PROTAGONISTA",
+        speaker: "NOAH",
         text: "¿Me van a dejar aquí para siempre?"
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "No seas dramático, querido. Para eso ya estoy yo."
       },
       {
-        speaker: "FREDDIE",
+        speaker: "FREDDIEUX",
         text: "¡Que comience el espectáculo!"
       }
     ];
 
     this.elvisDialogues = [
       { speaker: "ELVIS", text: "¡Uh-huh! ¡Alto ahí, terrícola! ¿Vienes a rescatarme o a pedirme un autógrafo?" },
-      { speaker: "PROTAGONISTA", text: "¿Por qué hay un Elvis extraterrestre en esta nave?" },
+      { speaker: "NOAH", text: "¿Por qué hay un Elvis extraterrestre en esta nave?" },
       { speaker: "ELVIS", text: "¡Porque el Rey nunca murió, cariño! Solo cambié de planeta." },
-      { speaker: "PROTAGONISTA", text: "Claro... y supongo que también tengo que bailar contigo." },
+      { speaker: "NOAH", text: "Claro... y supongo que también tengo que bailar contigo." },
       { speaker: "ELVIS", text: "¡Exactamente! Si sobrevives a mis pasos, te dejo pasar. Si no... ¡te unes a mi club de fans!" },
-      { speaker: "PROTAGONISTA", text: "Definitivamente debí quedarme en casa." }
+      { speaker: "NOAH", text: "Definitivamente debí quedarme en casa." }
     ];
 
     this.backgroundVideo = document.createElement("video");
@@ -2471,72 +2468,81 @@ if (
     }
   }
 
-  drawDialogueBox(speaker, text, hint) {
+  drawCharacterConversation(enemyPortrait, enemyName, accent, text, hint, speaker) {
     const ctx = this.context;
+    const enemySpeaking = speaker !== "NOAH";
+    const enemyNameColor = enemySpeaking ? accent : "#777b8f";
+    const playerNameColor = enemySpeaking ? "#777b8f" : "#53ddff";
 
-    const color = speaker === "FREDDIE"
-      ? "#a6ff00" : speaker === "ELVIS"
-        ? "#ffdc69" : "#53ddff";
-
-    ctx.fillStyle =
-      "rgba(3,2,15,0.55)";
-
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
     ctx.fillRect(0, 0, 1280, 720);
 
-    ctx.fillStyle =
-      "rgba(18,13,46,0.97)";
-
-    ctx.fillRect(75, 455, 1130, 225);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 5;
-    ctx.strokeRect(75, 455, 1130, 225);
-
-    ctx.textAlign = "left";
-    ctx.fillStyle = color;
-    ctx.font = "bold 27px Silkscreen";
-
-    ctx.fillText(
-      speaker,
-      115,
-      505
+    this.drawConversationPortrait(
+      enemyPortrait,
+      0,
+      490,
+      470,
+      490,
+      enemySpeaking ? 1 : 0.35
     );
 
-    if (
-      speaker === "FREDDIE"
-    ) {
-      ctx.font = "16px Silkscreen";
-      ctx.fillStyle = "#c8c4d8";
+    this.drawConversationPortrait(
+      this.playerDialoguePortrait,
+      810,
+      490,
+      470,
+      490,
+      enemySpeaking ? 0.35 : 1
+    );
 
-      ctx.fillText(
-        "Freddielux Mercury-9000",
-        265,
-        503
-      );
-    }
+    ctx.fillStyle = "rgba(5, 4, 18, 0.96)";
+    ctx.fillRect(180, 490, 920, 185);
 
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 5;
+    ctx.strokeRect(180, 490, 920, 185);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = enemyNameColor;
+    ctx.font = "bold 23px Silkscreen";
+    ctx.fillText(enemyName, 220, 530);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = playerNameColor;
+    ctx.font = "bold 17px Silkscreen";
+    ctx.fillText("NOAH", 1060, 530);
+
+    ctx.textAlign = "left";
     ctx.fillStyle = "#ffffff";
     ctx.font = "19px Silkscreen";
 
-    this.drawWrappedText(
-      text,
-      115,
-      547,
-      1040,
-      27
-    );
+    const words = text.split(" ");
+    const lines = [];
+    let line = "";
 
-    ctx.fillStyle = color;
-    ctx.font = "bold 14px Silkscreen";
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+
+      if (ctx.measureText(candidate).width > 820 && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+
+    if (line) lines.push(line);
+
+    lines.slice(0, 3).forEach((lineText, index) => {
+      ctx.fillText(lineText, 220, 572 + index * 28);
+    });
+
+    ctx.fillStyle = accent;
     ctx.textAlign = "right";
-
-    ctx.fillText(
-      hint,
-      1150,
-      646
-    );
-
-    ctx.textAlign = "start";
+    ctx.font = "15px Silkscreen";
+    ctx.fillText(hint, 1070, 650);
+    ctx.restore();
   }
 
   draw() {
@@ -2689,39 +2695,65 @@ if (
     this.alien.draw(this.context);
     this.player.draw(this.context);
 
-    const dialogue =
-      this.dialogues[this.dialogueIndex];
+    const dialogue = this.dialogues[this.dialogueIndex];
 
     if (!dialogue) return;
 
-    this.drawDialogueBox(
-      dialogue.speaker,
+    this.drawCharacterConversation(
+      this.freddieuxDialoguePortrait,
+      "FREDDIEUX",
+      "#a6ff00",
       dialogue.text,
-      this.dialogueIndex ===
-        this.dialogues.length - 1
+      this.dialogueIndex === this.dialogues.length - 1
         ? "CLIC PARA INICIAR EL TUTORIAL >"
-        : "CLIC PARA CONTINUAR >"
+        : "CLIC PARA CONTINUAR >",
+      dialogue.speaker
     );
   }
 
   drawElvisDialogue() {
     this.drawInvestigationBackground();
-    this.drawElvis(this.elvisPosition.x, this.elvisPosition.y,
-      this.elvisPosition.width, this.elvisPosition.height);
+    this.drawElvis(
+      this.elvisPosition.x,
+      this.elvisPosition.y,
+      this.elvisPosition.width,
+      this.elvisPosition.height
+    );
     this.player.draw(this.context);
+
     const entry = this.elvisDialogues[this.elvisDialogueIndex];
     if (!entry) return;
-    this.drawDialogueBox(entry.speaker, entry.text,
+
+    this.drawCharacterConversation(
+      this.elvisDialoguePortrait,
+      "ELVIS",
+      "#ffdc69",
+      entry.text,
       this.elvisDialogueIndex === this.elvisDialogues.length - 1
-        ? "CLIC PARA INICIAR LA BATALLA >" : "CLIC PARA CONTINUAR >");
+        ? "CLIC PARA INICIAR LA BATALLA >"
+        : "CLIC PARA CONTINUAR >",
+      entry.speaker
+    );
   }
 
   drawElvisVictoryDialogue() {
     this.drawInvestigationBackground();
-    this.drawElvis(this.elvisPosition.x, this.elvisPosition.y,
-      this.elvisPosition.width, this.elvisPosition.height);
+    this.drawElvis(
+      this.elvisPosition.x,
+      this.elvisPosition.y,
+      this.elvisPosition.width,
+      this.elvisPosition.height
+    );
     this.player.draw(this.context);
-    this.drawDialogueBox("ELVIS", this.elvisVictoryText, "CLIC PARA CONTINUAR >");
+
+    this.drawCharacterConversation(
+      this.elvisDialoguePortrait,
+      "ELVIS",
+      "#ffdc69",
+      this.elvisVictoryText,
+      "CLIC PARA CONTINUAR >",
+      "ELVIS"
+    );
   }
 
   drawVictoryDialogue() {
@@ -2735,35 +2767,26 @@ if (
     }
 
     this.drawDuelRoom();
-
     this.alien.draw(this.context);
     this.player.draw(this.context);
 
     const ctx = this.context;
-
     ctx.textAlign = "center";
     ctx.fillStyle = "#a6ff00";
     ctx.font = "bold 36px Silkscreen";
-
-    ctx.fillText(
-      "¡TUTORIAL COMPLETADO!",
-      640,
-      170
-    );
+    ctx.fillText("¡TUTORIAL COMPLETADO!", 640, 170);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 26px Silkscreen";
+    ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 225);
 
-    ctx.fillText(
-      `PUNTUACIÓN ${this.score}`,
-      640,
-      225
-    );
-
-    this.drawDialogueBox(
-      "FREDDIE",
+    this.drawCharacterConversation(
+      this.freddieuxDialoguePortrait,
+      "FREDDIEUX",
+      "#a6ff00",
       "¡Eres muy bueno! Te dejaré pasar nada más porque rompiste la pista.",
-      "CLIC PARA CONTINUAR >"
+      "CLIC PARA CONTINUAR >",
+      "FREDDIEUX"
     );
   }
 
@@ -2913,87 +2936,20 @@ if (
   }
 
   drawMichaelConversation(text, hint) {
-    const ctx = this.context;
-
-    ctx.save();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
-    ctx.fillRect(0, 0, 1280, 720);
-
-    this.drawConversationPortrait(
+    this.drawCharacterConversation(
       this.michaelDialoguePortrait,
-      -20,
-      -70,
-      620,
-      560,
-      1
+      "ALIEN MICHAEL JACKSON",
+      "#ff8cff",
+      text,
+      hint,
+      "MICHAEL"
     );
-
-    this.drawConversationPortrait(
-      this.playerDialoguePortrait,
-      925,
-      165,
-      300,
-      325,
-      0.35
-    );
-
-    ctx.fillStyle = "rgba(5, 4, 18, 0.96)";
-    ctx.fillRect(180, 490, 920, 185);
-
-    ctx.strokeStyle = "#e85cff";
-    ctx.lineWidth = 5;
-    ctx.strokeRect(180, 490, 920, 185);
-
-    ctx.fillStyle = "#ff8cff";
-    ctx.textAlign = "left";
-    ctx.font = "bold 23px Silkscreen";
-    ctx.fillText("ALIEN MICHAEL JACKSON", 220, 530);
-
-    ctx.fillStyle = "#777b8f";
-    ctx.textAlign = "right";
-    ctx.font = "bold 17px Silkscreen";
-    ctx.fillText("NOAH", 1060, 530);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "left";
-    ctx.font = "19px Silkscreen";
-
-    const words = text.split(" ");
-    const lines = [];
-    let line = "";
-
-    for (const word of words) {
-      const candidate = line ? `${line} ${word}` : word;
-
-      if (ctx.measureText(candidate).width > 830 && line) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = candidate;
-      }
-    }
-
-    if (line) lines.push(line);
-
-    lines.slice(0, 3).forEach((lineText, index) => {
-      ctx.fillText(lineText, 220, 572 + index * 28);
-    });
-
-    ctx.fillStyle = "#ff8cff";
-    ctx.textAlign = "right";
-    ctx.font = "15px Silkscreen";
-    ctx.fillText(hint, 1070, 650);
-    ctx.restore();
   }
 
-  drawConversationPortrait(image, x, y, width, height, opacity) {
+  drawConversationPortrait(image, x, bottomY, width, height, opacity) {
     const ctx = this.context;
 
-    if (
-      !image ||
-      !image.complete ||
-      image.naturalWidth === 0
-    ) {
+    if (!image || !image.complete || image.naturalWidth === 0) {
       return;
     }
 
@@ -3011,7 +2967,7 @@ if (
     ctx.drawImage(
       image,
       x + (width - drawWidth) / 2,
-      y + (height - drawHeight) / 2,
+      bottomY - drawHeight,
       drawWidth,
       drawHeight
     );
@@ -3318,7 +3274,7 @@ if (
       ctx.font = "18px Silkscreen";
 
       ctx.fillText(
-        "Presiona E para hablar con Freddie",
+        "Presiona E para hablar con Freddieux",
         640,
         675
       );
@@ -3503,7 +3459,7 @@ if (
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 31px Silkscreen";
-    ctx.fillText("MICHAEL JACKSON VS PROTAGONISTA", 640, 200);
+    ctx.fillText("MICHAEL JACKSON VS NOAH", 640, 200);
 
     ctx.font = "21px Silkscreen";
     ctx.fillText("Demuestra que puedes seguir el ritmo de la leyenda", 640, 280);
@@ -3552,7 +3508,7 @@ if (
     ctx.font = "bold 31px Silkscreen";
 
     ctx.fillText(
-      "ELVIS VS PROTAGONISTA",
+      "ELVIS VS NOAH",
       640,
       200
     );
@@ -3616,9 +3572,9 @@ if (
 
     ctx.fillText(
       this.battleMode === "michael"
-        ? "BATALLA 2: MICHAEL JACKSON"
+        ? "NOAH VS MICHAEL ALIEN"
         : this.battleMode === "elvis"
-          ? "BATALLA 1: ELVIS"
+          ? "NOAH VS ELVIS ALIEN"
           : "TUTORIAL DE RITMO",
       640,
       55
@@ -3909,9 +3865,4 @@ if (
     }
     this.drawBackButton();
   }
-
-}
-
-
-
-
+} 
