@@ -503,6 +503,12 @@ this.hallway02WalkableArea = [
     this.notes = [];
     this.effects = [];
 
+    this.tutorialPhase = "observe";
+    this.tutorialPhaseTime = 0;
+    this.tutorialNoteY = 130;
+    this.tutorialPracticeMessage = "";
+    this.tutorialPracticeMessageTimer = 0;
+
     this.score = 0;
     this.combo = 0;
     this.bestCombo = 0;
@@ -548,7 +554,7 @@ this.hallway02WalkableArea = [
         } else if ([
           "comic", "playing", "dialogue", "elvisDialogue",
           "elvisVictoryDialogue", "victoryDialogue", "rhythmIntro",
-          "rhythm", "rhythmEnd", "hallway", "hallway02",
+          "rhythmTutorial", "rhythm", "rhythmEnd", "hallway", "hallway02",
           "investigation", "disco"
         ].includes(this.state)) {
           this.pauseGame();
@@ -570,7 +576,16 @@ this.hallway02WalkableArea = [
         this.finishVictoryDialogue();
       } else if (this.state === "rhythmIntro") {
         event.preventDefault();
-        this.beginRhythm();
+        if (this.battleMode === "tutorial") {
+          this.tutorialPhase = "observe";
+          this.tutorialPhaseTime = 0;
+          this.tutorialNoteY = 130;
+          this.tutorialPracticeMessage = "";
+          this.tutorialPracticeMessageTimer = 0;
+          this.state = "rhythmTutorial";
+        } else {
+          this.beginRhythm();
+        }
       } else if (this.state === "disco" && this.activeMichaelDialogue >= 0) {
         event.preventDefault();
         this.activeMichaelDialogue++;
@@ -642,6 +657,10 @@ this.hallway02WalkableArea = [
       }
 
       this.updateRhythm(deltaTime);
+    }
+
+    if (this.state === "rhythmTutorial") {
+      this.updateRhythmTutorial(deltaTime);
     }
 
     this.draw();
@@ -822,9 +841,50 @@ this.hallway02WalkableArea = [
       if (this.isInside(x, y, this.buttons.back)) this.state = "menu";
       return;
     }
-    if (this.state === "rhythmIntro") {
-      if (this.isInside(x, y, this.buttons.back)) this.exitRhythm();
-      else if (this.isInside(x, y, this.buttons.begin)) this.beginRhythm();
+        if (this.state === "rhythmIntro") {
+      if (this.isInside(x, y, this.buttons.back)) {
+        this.exitRhythm();
+      } else if (this.isInside(x, y, this.buttons.begin)) {
+        if (this.battleMode === "tutorial") {
+          this.tutorialPhase = "observe";
+          this.tutorialPhaseTime = 0;
+          this.tutorialNoteY = 130;
+          this.tutorialPracticeMessage = "";
+          this.tutorialPracticeMessageTimer = 0;
+          this.state = "rhythmTutorial";
+        } else {
+          this.beginRhythm();
+        }
+      }
+      return;
+    }
+
+    if (this.state === "rhythmTutorial") {
+      if (this.isInside(x, y, this.buttons.back)) {
+        this.exitRhythm();
+        return;
+      }
+
+      if (this.tutorialPhase === "practice") {
+        const noteX = this.notePositions[1];
+
+        if (
+          Math.abs(this.tutorialNoteY - this.hitY) <= 55 &&
+          Math.abs(x - noteX) <= 65 &&
+          Math.abs(y - this.tutorialNoteY) <= 55
+        ) {
+          this.tutorialPhase = "success";
+          this.tutorialPhaseTime = 0;
+          this.tutorialPracticeMessage = "¡MUY BIEN! ¡LO LOGRASTE!";
+          this.tutorialPracticeMessageTimer = 1.4;
+        } else if (this.tutorialNoteY < this.hitY - 55) {
+          this.tutorialPracticeMessage = "¡ESPERA A QUE EL CÍRCULO LLEGUE A LA LÍNEA!";
+          this.tutorialPracticeMessageTimer = 1.5;
+        } else {
+          this.tutorialPracticeMessage = "¡INTÉNTALO OTRA VEZ! HAZ CLIC SOBRE EL CÍRCULO";
+          this.tutorialPracticeMessageTimer = 1.5;
+        }
+      }
       return;
     }
     if (this.state === "rhythmEnd") {
@@ -1506,11 +1566,16 @@ if (
   }
 
   beginRhythm() {
-    if (this.state !== "rhythmIntro" || this.loadingRhythm) return;
+  if (
+    (this.state !== "rhythmIntro" && this.state !== "rhythmTutorial") ||
+    this.loadingRhythm
+  ) return;
 
-    this.loadingRhythm = true;
-    this.musicAttempt++;
-    const attemptId = this.musicAttempt;
+  const startState = this.state;
+
+  this.loadingRhythm = true;
+  this.musicAttempt++;
+  const attemptId = this.musicAttempt;
 
     this.music.pause();
     this.music.playbackRate = 1;
@@ -1520,7 +1585,7 @@ if (
     this.audioStarted = false;
 
     const startBattle = () => {
-      if (attemptId !== this.musicAttempt || this.state !== "rhythmIntro") {
+      if (attemptId !== this.musicAttempt || this.state !== startState) {
         this.loadingRhythm = false;
         return;
       }
@@ -1736,6 +1801,65 @@ if (
     this.checkRhythmEnd();
   }
 
+  updateRhythmTutorial(deltaTime) {
+    this.tutorialPhaseTime += deltaTime;
+
+  this.tutorialPracticeMessageTimer = Math.max(
+    0,
+    this.tutorialPracticeMessageTimer - deltaTime
+  );
+
+  if (this.tutorialPhase === "observe") {
+    this.tutorialNoteY =
+      130 + Math.min(this.tutorialPhaseTime / 2.2, 1) *
+      (this.hitY - 130);
+
+    if (this.tutorialPhaseTime >= 2.5) {
+      this.tutorialPhase = "demonstration";
+      this.tutorialPhaseTime = 0;
+      this.tutorialNoteY = 130;
+    }
+
+    return;
+  }
+
+  if (this.tutorialPhase === "demonstration") {
+    this.tutorialNoteY =
+      130 + Math.min(this.tutorialPhaseTime / 3, 1) *
+      (this.hitY - 130);
+
+    if (this.tutorialPhaseTime >= 4.2) {
+      this.tutorialPhase = "practice";
+      this.tutorialPhaseTime = 0;
+      this.tutorialNoteY = 130;
+      this.tutorialPracticeMessage = "¡TU TURNO! HAZ CLIC SOBRE EL CÍRCULO";
+      this.tutorialPracticeMessageTimer = 2;
+    }
+
+    return;
+  }
+
+  if (this.tutorialPhase === "practice") {
+    this.tutorialNoteY =
+      130 + Math.min(this.tutorialPhaseTime / 3.2, 1) *
+      (this.hitY - 130);
+
+    if (this.tutorialPhaseTime >= 3.2) {
+      this.tutorialPhaseTime = 0;
+      this.tutorialNoteY = 130;
+      this.tutorialPracticeMessage = "¡INTÉNTALO OTRA VEZ!";
+      this.tutorialPracticeMessageTimer = 1.5;
+    }
+
+    return;
+  }
+
+  if (this.tutorialPhase === "success") {
+    if (this.tutorialPhaseTime >= 1.4) {
+      this.beginRhythm();
+    }
+  }
+  }
   getNoteY(note) {
     const speed =
       this.battleMode === "michael"
@@ -2566,8 +2690,12 @@ if (
       this.drawVictoryDialogue();
     } else if (
       this.state === "rhythmIntro"
+      ) {
+    this.drawRhythmIntro();
+    } else if (
+      this.state === "rhythmTutorial"
     ) {
-      this.drawRhythmIntro();
+      this.drawRhythmTutorial();
     } else if (
       this.state === "rhythm"
     ) {
@@ -3057,8 +3185,13 @@ if (
       this.drawRhythm();
     } else if (
       this.previousState === "rhythmIntro"
-    ) {
+      ) {
       this.drawRhythmIntro();
+    } else if (
+      this.previousState === "rhythmTutorial"
+    ) {
+      this.drawRhythmTutorial();
+
     } else if (
       this.previousState === "rhythmEnd"
     ) {
@@ -3434,7 +3567,7 @@ if (
     ctx.font = "bold 23px Silkscreen";
 
     ctx.fillText(
-      "INICIAR DUELO",
+      "COMENZAR PRÁCTICA",
       640,
       656
     );
@@ -3815,54 +3948,210 @@ if (
       );
     }
 
+  this.drawBackButton();
+  }
+
+  drawRhythmTutorial() {
+    const ctx = this.context;
+
+    this.drawRhythmBackground();
+
+    ctx.fillStyle = "rgba(5,3,22,0.91)";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    this.drawCharacters();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#a6ff00";
+    ctx.font = "bold 30px Silkscreen";
+    ctx.fillText("TUTORIAL DE RITMO", 640, 55);
+
+    let instruction = "";
+
+    if (this.tutorialPhase === "observe") {
+      instruction = "OBSERVA CÓMO CAE EL CÍRCULO";
+    } else if (this.tutorialPhase === "demonstration") {
+      instruction =
+        Math.abs(this.tutorialNoteY - this.hitY) <= 35
+          ? "¡AHORA! HAZ CLIC SOBRE LA NOTA"
+          : "OBSERVA CUÁNDO LLEGA A LA LÍNEA";
+    } else if (this.tutorialPhase === "practice") {
+      instruction = "TU TURNO: HAZ CLIC SOBRE EL CÍRCULO";
+    } else if (this.tutorialPhase === "success") {
+      instruction = "¡MUY BIEN! ¡LO LOGRASTE!";
+    }
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px Silkscreen";
+    ctx.fillText(instruction, 640, 90);
+
+    ctx.fillStyle = "#15112e";
+    ctx.fillRect(
+      this.trackLeft,
+      105,
+      this.trackRight - this.trackLeft,
+      520
+    );
+
+    ctx.strokeStyle = "#8e45dc";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(
+      this.trackLeft,
+      105,
+      this.trackRight - this.trackLeft,
+      520
+    );
+
+    for (let i = 0; i < this.notePositions.length; i++) {
+      const x = this.notePositions[i];
+
+      ctx.fillStyle =
+        i === 1
+          ? "rgba(83,221,255,0.13)"
+          : "rgba(100,55,170,0.06)";
+
+      ctx.fillRect(x - 58, 110, 116, 510);
+
+      ctx.strokeStyle = i === 1 ? "#53ddff" : "#8e45dc";
+      ctx.globalAlpha = i === 1 ? 0.65 : 0.2;
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(x - 58, 110);
+      ctx.lineTo(x - 58, 620);
+      ctx.stroke();
+
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.save();
+
+    ctx.strokeStyle = "#53ddff";
+    ctx.lineWidth = 6;
+    ctx.shadowColor = "#53ddff";
+    ctx.shadowBlur = 20;
+
+    ctx.beginPath();
+    ctx.moveTo(this.trackLeft, this.hitY);
+    ctx.lineTo(this.trackRight, this.hitY);
+    ctx.stroke();
+
+    ctx.restore();
+
+    if (this.tutorialPhase !== "success") {
+      ctx.save();
+      ctx.shadowColor = "#b970ff";
+      ctx.shadowBlur = 18;
+
+      this.drawSprite(
+        this.normalSprite,
+        this.notePositions[1],
+        this.tutorialNoteY,
+        80,
+        "#b970ff"
+      );
+
+      ctx.restore();
+    }
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#b8edff";
+    ctx.font = "15px Silkscreen";
+
+    if (this.tutorialPhase === "observe") {
+      ctx.fillText(
+        "MIRA EL MOVIMIENTO DE LA NOTA",
+        640,
+        665
+      );
+    } else if (this.tutorialPhase === "demonstration") {
+      ctx.fillText(
+        "EL MOMENTO CORRECTO ES CUANDO TOCA LA LÍNEA",
+        640,
+        665
+      );
+    } else if (this.tutorialPhase === "practice") {
+      ctx.fillText(
+        this.tutorialPracticeMessageTimer > 0
+          ? this.tutorialPracticeMessage
+          : "HAZ CLIC SOBRE EL CÍRCULO CUANDO LLEGUE A LA LÍNEA",
+        640,
+        665
+      );
+    } else if (this.tutorialPhase === "success") {
+      ctx.fillStyle = "#a6ff00";
+      ctx.font = "bold 21px Silkscreen";
+      ctx.fillText("¡LO HICISTE CORRECTAMENTE!", 640, 665);
+    }
+
     this.drawBackButton();
   }
 
   drawRhythmEnd() {
     const ctx = this.context;
+
     this.drawRhythmBackground();
+
     ctx.fillStyle = "rgba(7,4,26,0.92)";
     ctx.fillRect(0, 0, 1280, 720);
+
     this.drawCharacters();
+
     ctx.textAlign = "center";
+
     const victory = this.result === "victory";
+
     ctx.fillStyle = victory ? "#a6ff00" : "#ff576d";
     ctx.font = "bold 37px Silkscreen";
+
     const title = this.battleMode === "michael"
       ? (victory ? "¡VICTORIA CONTRA MICHAEL!" : "¡MICHAEL TE HA DERROTADO!")
       : this.battleMode === "elvis"
         ? (victory ? "¡VICTORIA CONTRA ELVIS!" : "¡ELVIS TE HA DERROTADO!")
         : (victory ? "¡TUTORIAL COMPLETADO!" : "¡HAS PERDIDO!");
+
     ctx.fillText(title, 640, 220);
+
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 29px Silkscreen";
     ctx.fillText(`PUNTUACIÓN ${this.score}`, 640, 305);
+
     ctx.font = "20px Silkscreen";
     ctx.fillText(`Aciertos: ${this.hits}`, 640, 365);
     ctx.fillText(`Errores consecutivos: ${this.misses}`, 640, 405);
     ctx.fillText(`Errores totales: ${this.totalMisses}`, 640, 445);
+
     const wonBattle = victory && (this.battleMode === "elvis" || this.battleMode === "michael");
+
     if (wonBattle) {
       const restart = this.buttons.battleRestart;
+
       ctx.fillStyle = "#a6ff00";
       ctx.fillRect(restart.x, restart.y, restart.width, restart.height);
+
       ctx.fillStyle = "#101225";
       ctx.font = "bold 18px Silkscreen";
       ctx.fillText("JUGAR DE NUEVO", restart.x + restart.width / 2, restart.y + 46);
+
       const explore = this.buttons.explore;
+
       ctx.fillStyle = "#53ddff";
       ctx.fillRect(explore.x, explore.y, explore.width, explore.height);
+
       ctx.fillStyle = "#101225";
       ctx.font = "bold 17px Silkscreen";
       ctx.fillText("SEGUIR EXPLORANDO", explore.x + explore.width / 2, explore.y + 46);
     } else {
       const button = this.buttons.restart;
+
       ctx.fillStyle = "#a6ff00";
       ctx.fillRect(button.x, button.y, button.width, button.height);
+
       ctx.fillStyle = "#101225";
       ctx.font = "bold 22px Silkscreen";
       ctx.fillText("VOLVER A JUGAR", button.x + button.width / 2, button.y + 45);
     }
+
     this.drawBackButton();
   }
-} 
+}
