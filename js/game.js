@@ -1,5 +1,6 @@
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
+import { Character } from "./character.js";
 
 export class Game {
   constructor(canvas) {
@@ -158,7 +159,7 @@ this.hallway02WalkableArea = [
         y: 565,
         radius: 135,
         image: this.bachStatueImage,
-        dialogue: "Vaya, parece un músico de otra época con esa peluca y esa vestimenta, seguro que componía piezas bastante elegantes. Me pregunto cómo sonaría su música."
+        dialogue: "¡USA LAS FLECHAS DEL TECLADO PARA JALAR Y MOVER LA ESTATUA DE BACH!"
       },
       {
         x: 330,
@@ -170,6 +171,18 @@ this.hallway02WalkableArea = [
     ];
 
     this.activeStatue = null;
+    this.bachLastPullDirection = null;
+
+    this.bachCharacter = new Character({
+      name: "Bach",
+      maxHp: 100,
+      baseX: 640,
+      baseY: 435,
+      width: 460,
+      height: 340,
+      spriteSrc: "./assets/Mini estatua Bach.png",
+      isPlayer: false
+    });
 
     this.hallway02DiscoDoor = {
       x: 55,
@@ -1012,7 +1025,35 @@ this.hallway02WalkableArea = [
     const interacting = this.player.wantsToInteract();
 
     if (this.activeStatue) {
+      if (this.activeStatue === this.hallway02Statues[0]) {
+        const keys = this.player.keys;
+        let direction = null;
+
+        if (keys.has("arrowleft")) direction = "left";
+        else if (keys.has("arrowright")) direction = "right";
+        else if (keys.has("arrowup")) direction = "up";
+        else if (keys.has("arrowdown")) direction = "down";
+
+        if (direction) {
+          if (direction !== this.bachLastPullDirection) {
+          }
+
+          this.bachLastPullDirection = direction;
+          this.bachCharacter.setPullDirection(direction);
+        } else {
+          this.bachLastPullDirection = null;
+          this.bachCharacter.releasePull();
+        }
+
+        this.bachCharacter.update(deltaTime);
+      }
+
       if (interacting && !this.wasInteracting) {
+        if (this.activeStatue === this.hallway02Statues[0]) {
+          this.bachCharacter.releasePull();
+          this.bachLastPullDirection = null;
+        }
+
         this.activeStatue = null;
       }
 
@@ -2982,12 +3023,16 @@ if (
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, 1280, 720);
 
-    this.drawContainedImage(statue.image, {
-      x: 410,
-      y: 95,
-      width: 460,
-      height: 340
-    });
+    if (statue === this.hallway02Statues[0]) {
+      this.bachCharacter.draw(ctx);
+    } else {
+      this.drawContainedImage(statue.image, {
+        x: 410,
+        y: 95,
+        width: 460,
+        height: 340
+      });
+    }
 
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
@@ -3017,11 +3062,20 @@ if (
     ctx.fillStyle = "#a6ff00";
     ctx.font = "16px Silkscreen";
 
-    ctx.fillText(
-      "PRESIONA E PARA CONTINUAR",
-      640,
-      615
-    );
+    if (statue === this.hallway02Statues[0]) { 
+
+      ctx.fillText(
+        "PRESIONA E PARA SALIR",
+        640,
+        625
+      );
+    } else {
+      ctx.fillText(
+        "PRESIONA E PARA CONTINUAR",
+        640,
+        615
+      );
+    }
 
     ctx.restore();
   }
