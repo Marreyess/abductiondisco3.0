@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 import { Character } from "./character.js";
@@ -21,7 +27,7 @@ export class Game {
     this.hallwayImage = this.loadImage("./assets/Pasillo01.png");
     this.hallway02Image = this.loadImage("./assets/Pasillo02.png");
     this.bachStatueImage = this.loadImage("./assets/Mini estatua Bach.png");
-    this.princeStatueImage = this.loadImage("./assets/Mini Statua Price.png");
+    this.princeStatueImage = this.loadImage("./assets/Mini Statua Price.PNG");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
     this.discoRoom = this.loadImage("./assets/Sala disco.png");
     this.michaelSprite = this.loadImage("./assets/Alien/Alien Michael J.png");
@@ -166,7 +172,7 @@ this.hallway02WalkableArea = [
         y: 565,
         radius: 135,
         image: this.princeStatueImage,
-        dialogue: "¡Qué estilo! Parece que sabía muy bien cómo llamar la atención, con esa guitarra seguro que hacía vibrar todo el escenario."
+        dialogue: "¡USA LAS FLECHAS DEL TECLADO PARA JALAR Y MOVER LA ESTATUA DE PRICE!"
       }
     ];
 
@@ -181,6 +187,17 @@ this.hallway02WalkableArea = [
       width: 460,
       height: 340,
       spriteSrc: "./assets/Mini estatua Bach.png",
+      isPlayer: false
+    });
+
+    this.princeCharacter = new Character({
+      name: "Price",
+      maxHp: 100,
+      baseX: 640,
+      baseY: 435,
+      width: 460,
+      height: 340,
+      spriteSrc: "./assets/Mini Statua Price.PNG",
       isPlayer: false
     });
 
@@ -752,6 +769,9 @@ this.hallway02WalkableArea = [
   }
 
   resetGame() {
+    this.activeStatue = null;
+    this.bachCharacter.releasePull();
+    this.princeCharacter.releasePull();
     this.musicAttempt++;
 
     this.music.pause();
@@ -1025,35 +1045,22 @@ this.hallway02WalkableArea = [
     const interacting = this.player.wantsToInteract();
 
     if (this.activeStatue) {
-      if (this.activeStatue === this.hallway02Statues[0]) {
-        const keys = this.player.keys;
-        let direction = null;
+      const character = this.activeStatue === this.hallway02Statues[0]
+        ? this.bachCharacter : this.princeCharacter;
+      const keys = this.player.keys;
+      let direction = null;
 
-        if (keys.has("arrowleft")) direction = "left";
-        else if (keys.has("arrowright")) direction = "right";
-        else if (keys.has("arrowup")) direction = "up";
-        else if (keys.has("arrowdown")) direction = "down";
+      if (keys.has("arrowleft")) direction = "left";
+      else if (keys.has("arrowright")) direction = "right";
+      else if (keys.has("arrowup")) direction = "up";
+      else if (keys.has("arrowdown")) direction = "down";
 
-        if (direction) {
-          if (direction !== this.bachLastPullDirection) {
-          }
-
-          this.bachLastPullDirection = direction;
-          this.bachCharacter.setPullDirection(direction);
-        } else {
-          this.bachLastPullDirection = null;
-          this.bachCharacter.releasePull();
-        }
-
-        this.bachCharacter.update(deltaTime);
-      }
+      if (direction) character.setPullDirection(direction);
+      else character.releasePull();
+      character.update(deltaTime);
 
       if (interacting && !this.wasInteracting) {
-        if (this.activeStatue === this.hallway02Statues[0]) {
-          this.bachCharacter.releasePull();
-          this.bachLastPullDirection = null;
-        }
-
+        character.releasePull();
         this.activeStatue = null;
       }
 
@@ -3025,6 +3032,8 @@ if (
 
     if (statue === this.hallway02Statues[0]) {
       this.bachCharacter.draw(ctx);
+    } else if (statue === this.hallway02Statues[1]) {
+      this.princeCharacter.draw(ctx);
     } else {
       this.drawContainedImage(statue.image, {
         x: 410,
@@ -3062,7 +3071,7 @@ if (
     ctx.fillStyle = "#a6ff00";
     ctx.font = "16px Silkscreen";
 
-    if (statue === this.hallway02Statues[0]) { 
+    if (statue === this.hallway02Statues[0] || statue === this.hallway02Statues[1]) {
 
       ctx.fillText(
         "PRESIONA E PARA SALIR",
@@ -4209,3 +4218,7 @@ if (
     this.drawBackButton();
   }
 }
+
+
+
+
