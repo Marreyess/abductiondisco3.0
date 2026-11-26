@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 import { Character } from "./character.js";
@@ -35,7 +30,7 @@ export class Game {
     this.playerDialoguePortrait = this.loadImage("./assets/Player/Dialogo_player.png");
     this.freddieuxDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Freddie.png");
     this.elvisDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Elvis.png");
-    this.playerDanceSprites = [1, 2, 3, 4, 6, 7, 8].map(frame =>
+    this.playerDanceSprites = [1, 2, 3, 4, 5, 6, 7, 8].map(frame =>
       this.loadImage(`./assets/Player/dance${String(frame).padStart(2, "0")}.png`)
     );
     this.playerDanceFrame = 0;
@@ -1770,7 +1765,7 @@ if (
     this.rhythmTime =
       this.getRhythmTime(deltaTime);
 
-    if (this.battleMode === "michael") {
+    if (["tutorial", "elvis", "michael"].includes(this.battleMode)) {
       this.playerDanceTimer += deltaTime;
 
       while (this.playerDanceTimer >= this.playerDanceFrameDuration) {
@@ -2518,7 +2513,7 @@ if (
       355 - this.player.y
     );
 
-    if (this.battleMode === "michael") {
+    if (this.state === "rhythm" || (this.state === "paused" && this.previousState === "rhythm")) {
       const danceSprite = this.playerDanceSprites[this.playerDanceFrame];
 
       if (danceSprite && danceSprite.complete && danceSprite.naturalWidth > 0) {
