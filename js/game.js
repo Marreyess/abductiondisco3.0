@@ -1,3 +1,8 @@
+
+
+
+
+
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 import { Character } from "./character.js";
@@ -32,6 +37,7 @@ export class Game {
     this.playerDialoguePortrait = this.loadImage("./assets/Player/Dialogo_player.png");
     this.freddieuxDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Freddie.png");
     this.elvisDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Elvis.png");
+    this.playerIdleSouth = this.loadImage("./assets/Player/idle_south.png");
     this.playerDanceSprites = [1, 2, 3, 4, 5, 6, 7, 8].map(frame =>
       this.loadImage(`./assets/Player/dance${String(frame).padStart(2, "0")}.png`)
     );
@@ -699,7 +705,7 @@ this.hallway02WalkableArea = [
         if (this.state === "paused") {
           this.resumeGame();
         } else if ([
-          "comic", "playing", "dialogue", "elvisDialogue",
+          "comic", "controls", "playing", "dialogue", "elvisDialogue",
           "elvisVictoryDialogue", "victoryDialogue", "rhythmIntro",
           "rhythmTutorial", "rhythm", "rhythmEnd", "hallway", "hallway02",
           "hallway03", "investigation", "disco", "commandBridge"
@@ -987,9 +993,14 @@ this.hallway02WalkableArea = [
       if (this.comicIndex >= this.comicTotal) {
         this.comicIndex = 0;
         this.resetPlayerPosition();
-        this.state = "playing";
+        this.state = "controls";
         this.wasInteracting = this.player.wantsToInteract();
       }
+      return;
+    }
+    if (this.state === "controls") {
+      this.state = "playing";
+      this.wasInteracting = this.player.wantsToInteract();
       return;
     }
     if (this.state === "dialogue") return this.nextDialogue();
@@ -2816,20 +2827,23 @@ if (
       355 - this.player.y
     );
 
-    if (this.state === "rhythm" || (this.state === "paused" && this.previousState === "rhythm")) {
-      const danceSprite = this.playerDanceSprites[this.playerDanceFrame];
+    const rhythmIsActive = this.state === "rhythm" ||
+      (this.state === "paused" && this.previousState === "rhythm");
 
-      if (danceSprite && danceSprite.complete && danceSprite.naturalWidth > 0) {
-        ctx.drawImage(
-          danceSprite,
-          this.player.x,
-          this.player.y,
-          this.player.width,
-          this.player.height
-        );
-      } else {
-        this.player.draw(ctx);
-      }
+    const noteNearby = rhythmIsActive && this.notes.some(note =>
+      Math.abs(note.time - this.rhythmTime) <= 0.48
+    );
+
+    const useDance = rhythmIsActive && noteNearby &&
+      !this.musicError && this.audioStarted;
+
+    const sprite = useDance
+      ? this.playerDanceSprites[this.playerDanceFrame]
+      : this.playerIdleSouth;
+
+    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+      ctx.drawImage(sprite, this.player.x, this.player.y,
+        this.player.width, this.player.height);
     } else {
       this.player.draw(ctx);
     }
@@ -3022,6 +3036,8 @@ if (
       this.drawMenu();
     } else if (this.state === "comic") {
       this.drawComic();
+    } else if (this.state === "controls") {
+      this.drawControls();
     } else if (this.state === "credits") {
       this.drawCredits();
     } else if (this.state === "dialogue") {
@@ -3169,6 +3185,86 @@ if (
       640,
       690
     );
+  }
+
+  drawControls() {
+    const ctx = this.context;
+    this.drawDuelRoom();
+    ctx.save();
+    ctx.fillStyle = "rgba(5, 4, 21, 0.96)";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    ctx.fillStyle = "#171331";
+    ctx.fillRect(70, 28, 1140, 664);
+    ctx.strokeStyle = "#00ccff";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(70, 28, 1140, 664);
+
+    const textFit = (value, x, y, maxWidth, fontSize, color, align = "left") => {
+      let size = fontSize;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      do {
+        ctx.font = `bold ${size}px Silkscreen`;
+        if (ctx.measureText(value).width <= maxWidth || size <= 11) break;
+        size--;
+      } while (size > 10);
+      ctx.fillText(value, x, y);
+    };
+
+    const drawKey = (label, x, y, width = 65, height = 54, color = "#53ddff") => {
+      ctx.fillStyle = "#252044";
+      ctx.fillRect(x, y, width, height);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.font = label.length > 1 ? "bold 18px Silkscreen" : "bold 25px Silkscreen";
+      ctx.fillText(label, x + width / 2, y + height / 2 + 9);
+    };
+
+    textFit("¿CÓMO SE JUEGA?", 640, 91, 1020, 40, "#002fff", "center");
+    textFit("CONTROLES DE ABDUCCIÓN DISCO", 640, 132, 980, 18, "#e3dcf8", "center");
+
+    ctx.strokeStyle = "rgba(179, 156, 242, 0.3)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(105, 151);
+    ctx.lineTo(1175, 151);
+    ctx.stroke();
+
+    textFit("MOVERTE", 150, 189, 300, 22, "#53ddff");
+    drawKey("W", 246, 213);
+    drawKey("A", 174, 273);
+    drawKey("S", 246, 273);
+    drawKey("D", 318, 273);
+
+    textFit("O", 470, 302, 35, 22, "#ffffff", "center");
+    drawKey("↑", 646, 213);
+    drawKey("←", 574, 273);
+    drawKey("↓", 646, 273);
+    drawKey("→", 718, 273);
+
+    ctx.strokeStyle = "rgba(179, 156, 242, 0.3)";
+    ctx.beginPath();
+    ctx.moveTo(105, 351);
+    ctx.lineTo(1175, 351);
+    ctx.stroke();
+
+    textFit("ACCIONES", 145, 391, 425, 22, "#ffdc69");
+    drawKey("E", 153, 415, 72, 52, "#ffdc69");
+    textFit("HABLAR / ABRIR / EXAMINAR", 242, 448, 323, 16, "#ffffff");
+
+    drawKey("ESC", 153, 485, 92, 52, "#ff60b6");
+    textFit("PAUSAR EL JUEGO", 261, 518, 310, 16, "#ffffff");
+
+    textFit("EN LAS ESTATUAS USA LAS FLECHAS PARA MOVERLAS", 640, 608, 1020, 15, "#bbf4ff", "center");
+
+    ctx.fillStyle = "#00a2ff";
+    ctx.fillRect(338, 627, 604, 48);
+    textFit("HAZ CLIC PARA COMENZAR", 640, 660, 570, 21, "#101225", "center");
+    ctx.restore();
   }
 
   drawDialogue() {
@@ -3641,6 +3737,8 @@ if (
       this.previousState === "comic"
     ) {
       this.drawComic();
+    } else if (this.previousState === "controls") {
+      this.drawControls();
     } else if (
       this.previousState === "dialogue"
     ) {
@@ -4637,3 +4735,7 @@ if (
     this.drawBackButton();
   }
 }
+
+
+
+
