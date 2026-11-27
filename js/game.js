@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 import { Character } from "./character.js";
@@ -56,7 +49,7 @@ export class Game {
     });
     this.bossDanceFrame = 0;
     this.bossDanceTimer = 0;
-    this.bossDanceFrameDuration = 0.19;
+    this.bossDanceFrameDuration = 0.20;
     this.bossPosition = { x: 555, y: 280, width: 170, height: 232 };
     this.bossImageBounds = new WeakMap();
     this.bossDefeated = false;
@@ -84,7 +77,7 @@ export class Game {
     );
     this.playerDanceFrame = 0;
     this.playerDanceTimer = 0;
-    this.playerDanceFrameDuration = 0.14;
+    this.playerDanceFrameDuration = 0.20;
     this.michaelDanceSprites = [];
 
     for (let i = 1; i <= 8; i++) {
@@ -96,7 +89,7 @@ export class Game {
 
     this.michaelDanceFrame = 0;
     this.michaelDanceTimer = 0;
-    this.michaelDanceFrameDuration = 0.12;
+    this.michaelDanceFrameDuration = 0.20;
     this.michaelDefeated = false;
     this.activeMichaelDialogue = -1;
 
@@ -112,7 +105,7 @@ export class Game {
 
     this.elvisDanceFrame = 0;
     this.elvisDanceTimer = 0;
-    this.elvisDanceFrameDuration = 0.16;
+    this.elvisDanceFrameDuration = 0.20;
 
     this.normalSprite = this.loadImage("./assets/Notas/normal02.png");
     this.doubleSprite = this.loadImage("./assets/Notas/dobleClic02.png");
@@ -1129,10 +1122,10 @@ this.hallway02WalkableArea = [
           this.tutorialPracticeMessage = "¡MUY BIEN! ¡LO LOGRASTE!";
           this.tutorialPracticeMessageTimer = 1.4;
         } else if (this.tutorialNoteY < this.hitY - 55) {
-          this.tutorialPracticeMessage = "¡ESPERA A QUE EL CÍRCULO LLEGUE A LA LÍNEA!";
+          this.tutorialPracticeMessage = "¡ESPERA A QUE EL CIRCULO LLEGUE A LA LÍNEA!";
           this.tutorialPracticeMessageTimer = 1.5;
         } else {
-          this.tutorialPracticeMessage = "¡INTÉNTALO OTRA VEZ! HAZ CLIC SOBRE EL CÍRCULO";
+          this.tutorialPracticeMessage = "¡INTÉNTALO OTRA VEZ! HAZ CLIC SOBRE EL CIRCULO";
           this.tutorialPracticeMessageTimer = 1.5;
         }
       }
@@ -2328,7 +2321,7 @@ if (
       this.tutorialPhase = "practice";
       this.tutorialPhaseTime = 0;
       this.tutorialNoteY = 130;
-      this.tutorialPracticeMessage = "¡TU TURNO! HAZ CLIC SOBRE EL CÍRCULO";
+      this.tutorialPracticeMessage = "¡TU TURNO! HAZ CLIC SOBRE EL CIRCULO";
       this.tutorialPracticeMessageTimer = 2;
     }
 
@@ -4153,77 +4146,71 @@ if (
     const ctx = this.context;
 
     this.drawBackground();
+
+    ctx.save();
     ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+    ctx.shadowBlur = 5;
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 44px Silkscreen";
-
-    ctx.fillText(
-      "CREDITS",
-      640,
-      75
-    );
-
-    this.drawContainedImage(
-      this.studioLogo,
-      {
-        x: 490,
-        y: 100,
-        width: 300,
-        height: 250
-      }
-    );
+    ctx.font = "bold 38px Silkscreen";
+    ctx.fillText("CRÉDITOS", 640, 65);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 25px Silkscreen";
+    ctx.font = "bold 23px Silkscreen";
+    ctx.fillText("MARIANA A. REYES", 365, 190);
+    ctx.fillText("OSCAR MICHEL ORTEGA MARTÍNEZ", 915, 190);
 
-    ctx.fillText(
-      "DOUBLE M STUDIO",
-      640,
-      385
-    );
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(150, 245);
+    ctx.lineTo(1130, 245);
+    ctx.stroke();
+
+    ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+    ctx.shadowBlur = 5;
 
     ctx.fillStyle = "#a6ff00";
-    ctx.font = "bold 17px Silkscreen";
-
-    ctx.fillText(
-      "DESARROLLO DEL VIDEOJUEGO",
-      640,
-      425
-    );
-
-    ctx.fillStyle = "#c8c4d8";
-    ctx.font = "18px Silkscreen";
-
-    ctx.fillText(
-      "Desarrollado por",
-      640,
-      465
-    );
+    ctx.font = "bold 18px Silkscreen";
+    ctx.fillText("MÚSICA", 400, 300);
+    ctx.fillText("RECURSOS VISUALES", 1010, 300);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px Silkscreen";
+    ctx.font = "bold 14px Silkscreen";
+    ctx.fillText("BURNING LOVE", 245, 365);
+    ctx.font = "13px Silkscreen";
+    ctx.fillText("ELVIS PRESLEY · VOODOOVIBE", 245, 390);
 
-    ctx.fillText(
-      "Mariana A. Reyes",
-      640,
-      505
-    );
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 14px Silkscreen";
+    ctx.fillText("JOHANN SEBASTIAN BACH", 545, 365);
+    ctx.font = "13px Silkscreen";
+    ctx.fillText("RÁNEO", 545, 395);
 
-    ctx.fillText(
-      "Oscar Michel Ortega Martinez",
-      640,
-      540
-    );
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 14px Silkscreen";
+    ctx.fillText("ANOTHER ONE BITES THE DUST", 245, 495);
+    ctx.font = "13px Silkscreen";
+    ctx.fillText("QUEEN · ASTROHOUSE", 245, 525);
 
-    ctx.fillStyle = "#a6ff00";
-    ctx.font = "16px Silkscreen";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 14px Silkscreen";
+    ctx.fillText("THRILLER", 545, 495);
+    ctx.font = "13px Silkscreen";
+    ctx.fillText("MICHAEL JACKSON · HOUSE HUB", 545, 525);
 
-    ctx.fillText(
-      "ABDUCCIÓN DISCO",
-      640,
-      585
-    );
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "13px Silkscreen";
+    ctx.fillText("Se utilizaron herramientas de", 1010, 375);
+    ctx.fillText("inteligencia artificial como", 1010, 402);
+    ctx.fillText("apoyo en la creación de", 1010, 429);
+    ctx.fillText("algunos recursos visuales", 1010, 456);
+    ctx.fillText("del videojuego.", 1010, 483);
+
+    ctx.restore();
 
     this.drawBackButton();
   }
@@ -4347,13 +4334,13 @@ if (
     const items = [
       {
         image: this.normalSprite,
-        title: "CÍRCULO",
+        title: "CIRCULO",
         description: "Un clic cuando toque la línea",
         y: 215
       },
       {
         image: this.doubleSprite,
-        title: "CÍRCULO DOBLE",
+        title: "CIRCULO DOBLE",
         description: "Dos clics rápidos en la línea",
         y: 320
       },
@@ -4855,14 +4842,14 @@ if (
     let instruction = "";
 
     if (this.tutorialPhase === "observe") {
-      instruction = "OBSERVA CÓMO CAE EL CÍRCULO";
+      instruction = "OBSERVA CÓMO CAE EL CIRCULO";
     } else if (this.tutorialPhase === "demonstration") {
       instruction =
         Math.abs(this.tutorialNoteY - this.hitY) <= 35
           ? "¡AHORA! HAZ CLIC SOBRE LA NOTA"
           : "OBSERVA CUÁNDO LLEGA A LA LÍNEA";
     } else if (this.tutorialPhase === "practice") {
-      instruction = "TU TURNO: HAZ CLIC SOBRE EL CÍRCULO";
+      instruction = "TU TURNO: HAZ CLIC SOBRE EL CIRCULO";
     } else if (this.tutorialPhase === "success") {
       instruction = "¡MUY BIEN! ¡LO LOGRASTE!";
     }
@@ -4960,7 +4947,7 @@ if (
       ctx.fillText(
         this.tutorialPracticeMessageTimer > 0
           ? this.tutorialPracticeMessage
-          : "HAZ CLIC SOBRE EL CÍRCULO CUANDO LLEGUE A LA LÍNEA",
+          : "HAZ CLIC SOBRE EL CIRCULO CUANDO LLEGUE A LA LÍNEA",
         640,
         665
       );
@@ -5043,11 +5030,3 @@ if (
     this.drawBackButton();
   }
 }
-
-
-
-
-
-
-
-
