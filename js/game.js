@@ -4322,14 +4322,6 @@ if (
       115
     );
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "17px Silkscreen";
-
-    ctx.fillText(
-      "Conoce las notas antes del duelo",
-      640,
-      150
-    );
 
     const items = [
       {
@@ -4369,7 +4361,7 @@ if (
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 18px Silkscreen";
+      ctx.font = "bold 20px Silkscreen";
 
       ctx.fillText(
         item.title,
@@ -4387,7 +4379,7 @@ if (
     }
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#ffdc69";
+    ctx.fillStyle = "#781111";
     ctx.font = "15px Silkscreen";
 
     ctx.fillText(
