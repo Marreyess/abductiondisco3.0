@@ -3,6 +3,9 @@
 
 
 
+
+
+
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 import { Character } from "./character.js";
@@ -32,6 +35,44 @@ export class Game {
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
     this.discoRoom = this.loadImage("./assets/Sala disco.png");
     this.commandBridgeImage = this.loadImage("./assets/Puente de mando.png");
+    this.bossSprite = this.loadImage("./assets/Alien/Johann bach.png");
+    this.bossSprite.onerror = () => {
+      this.bossSprite.onerror = null;
+      this.bossSprite.src = "./assets/Johann bach.png";
+    };
+    this.bossDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Bach.PNG");
+    this.bossDialoguePortrait.onerror = () => {
+      this.bossDialoguePortrait.onerror = null;
+      this.bossDialoguePortrait.src = "./assets/Dialogo_Bach.PNG";
+    };
+    this.bossDanceSprites = Array.from({ length: 8 }, (_, i) =>
+      this.loadImage(`./assets/Alien/dance_bach${String(i + 1).padStart(2, "0")}.png`)
+    );
+    this.bossDanceSprites.forEach((sprite, index) => {
+      sprite.onerror = () => {
+        sprite.onerror = null;
+        sprite.src = `./assets/dance_bach${String(index + 1).padStart(2, "0")}.png`;
+      };
+    });
+    this.bossDanceFrame = 0;
+    this.bossDanceTimer = 0;
+    this.bossDanceFrameDuration = 0.19;
+    this.bossPosition = { x: 555, y: 280, width: 170, height: 232 };
+    this.bossImageBounds = new WeakMap();
+    this.bossDefeated = false;
+    this.bossDialogueIndex = 0;
+    this.bossDialogues = [
+      { speaker: "JOHANN BACH", text: "¡Alto, humano! Has vencido a mis artistas, pero la última nota de esta nave me pertenece." },
+      { speaker: "NOAH", text: "¿Otro duelo? ¿No tienen una puerta de salida normal?" },
+      { speaker: "JOHANN BACH", text: "¡Prepárate para la sinfonía final! Aquí hasta las estrellas siguen mi compás." }
+    ];
+    this.bossVictoryText = "¡Increíble! Me ganaste en mi propia nave... ¡y eso que yo puse la música!";
+    this.bossVictoryDialogues = [
+      { speaker: "JOHANN BACH", text: "¡Imposible! ¡Me ganaste en mi propia nave... y eso que yo puse la música!" },
+      { speaker: "NOAH", text: "Entonces, ¿ya puedo volver a casa o me falta derrotar a un mariachi espacial?" },
+      { speaker: "JOHANN BACH", text: "¡No, no! ¡Vete antes de que me desafíe también el refrigerador!" }
+    ];
+    this.bossVictoryIndex = 0;
     this.michaelSprite = this.loadImage("./assets/Alien/Alien Michael J.png");
     this.michaelDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Michael J.PNG");
     this.playerDialoguePortrait = this.loadImage("./assets/Player/Dialogo_player.png");
@@ -597,6 +638,7 @@ this.hallway02WalkableArea = [
       restart: { x: 470, y: 495, width: 340, height: 75 },
       battleRestart: { x: 290, y: 495, width: 310, height: 75 },
       explore: { x: 640, y: 495, width: 360, height: 75 },
+      returnHome: { x: 465, y: 381, width: 350, height: 72 },
       pauseContinue: { x: 475, y: 443, width: 307, height: 67 },
       pauseExit: { x: 475, y: 520, width: 307, height: 66 }
     };
@@ -604,6 +646,11 @@ this.hallway02WalkableArea = [
     this.tutorialMusicPath = "./assets/Queen - Another One Bites The Dust.wav";
     this.elvisMusicPath = "./assets/Elvis Presley - Burning Love.wav";
     this.michaelMusicPath = "./assets/Michael Jackson - Thriller.wav";
+    this.bossMusicPath = "./assets/Johann Sebastian Bach.wav";
+    this.bossMusicStart = 0;
+    this.bossNoteSpeed = 475;
+    this.bossHitWindow = 0.16;
+    this.bossDoubleHitWindow = 0.27;
     this.tutorialMusicStart = 50;
     this.elvisMusicStart = 0;
     this.michaelMusicStart = 35;
@@ -708,7 +755,8 @@ this.hallway02WalkableArea = [
           "comic", "controls", "playing", "dialogue", "elvisDialogue",
           "elvisVictoryDialogue", "victoryDialogue", "rhythmIntro",
           "rhythmTutorial", "rhythm", "rhythmEnd", "hallway", "hallway02",
-          "hallway03", "investigation", "disco", "commandBridge"
+          "hallway03", "investigation", "disco", "commandBridge",
+          "bossDialogue", "bossVictoryDialogue"
         ].includes(this.state)) {
           this.pauseGame();
         }
@@ -724,6 +772,14 @@ this.hallway02WalkableArea = [
       } else if (this.state === "elvisVictoryDialogue") {
         event.preventDefault();
         this.finishElvisVictoryDialogue();
+      } else if (this.state === "bossDialogue") {
+        event.preventDefault();
+        this.nextBossDialogue();
+      } else if (this.state === "bossVictoryDialogue") {
+        event.preventDefault();
+        if (this.bossVictoryIndex < this.bossVictoryDialogues.length - 1) {
+          this.bossVictoryIndex++;
+        }
       } else if (this.state === "victoryDialogue") {
         event.preventDefault();
         this.finishVictoryDialogue();
@@ -816,6 +872,9 @@ this.hallway02WalkableArea = [
       if (this.battleMode === "michael") {
         this.updateMichaelDance(deltaTime);
       }
+      if (this.battleMode === "boss") {
+        this.updateBossDance(deltaTime);
+      }
 
       this.updateRhythm(deltaTime);
     }
@@ -849,6 +908,14 @@ this.hallway02WalkableArea = [
       this.elvisDanceFrame =
         (this.elvisDanceFrame + 1) %
         this.elvisDanceSprites.length;
+    }
+  }
+
+  updateBossDance(deltaTime) {
+    this.bossDanceTimer += deltaTime;
+    while (this.bossDanceTimer >= this.bossDanceFrameDuration) {
+      this.bossDanceTimer -= this.bossDanceFrameDuration;
+      this.bossDanceFrame = (this.bossDanceFrame + 1) % this.bossDanceSprites.length;
     }
   }
 
@@ -901,6 +968,9 @@ this.hallway02WalkableArea = [
 
   resetGame() {
     this.activeStatue = null;
+    this.bossDefeated = false;
+    this.bossDialogueIndex = 0;
+    this.bossVictoryIndex = 0;
     this.bachCharacter.releasePull();
     this.princeCharacter.releasePull();
     this.musicAttempt++;
@@ -938,6 +1008,8 @@ this.hallway02WalkableArea = [
 
     this.elvisDanceFrame = 0;
     this.elvisDanceTimer = 0;
+    this.bossDanceFrame = 0;
+    this.bossDanceTimer = 0;
 
     this.comicIndex = 0;
     this.dialogueIndex = 0;
@@ -1006,6 +1078,15 @@ this.hallway02WalkableArea = [
     if (this.state === "dialogue") return this.nextDialogue();
     if (this.state === "elvisDialogue") return this.nextElvisDialogue();
     if (this.state === "elvisVictoryDialogue") return this.finishElvisVictoryDialogue();
+    if (this.state === "bossDialogue") return this.nextBossDialogue();
+    if (this.state === "bossVictoryDialogue") {
+      if (this.bossVictoryIndex < this.bossVictoryDialogues.length - 1) {
+        this.bossVictoryIndex++;
+      } else if (this.isInside(x, y, this.buttons.returnHome)) {
+        this.finishBossVictoryDialogue();
+      }
+      return;
+    }
     if (this.state === "victoryDialogue") return this.finishVictoryDialogue();
     if (this.state === "credits") {
       if (this.isInside(x, y, this.buttons.back)) this.state = "menu";
@@ -1059,13 +1140,14 @@ this.hallway02WalkableArea = [
     }
     if (this.state === "rhythmEnd") {
       const wonBattle = this.result === "victory" &&
-        (this.battleMode === "elvis" || this.battleMode === "michael");
+        (this.battleMode === "elvis" || this.battleMode === "michael" || this.battleMode === "boss");
       if (wonBattle) {
         if (this.isInside(x, y, this.buttons.battleRestart)) {
           this.startRhythm(this.battleMode);
         } else if (this.isInside(x, y, this.buttons.explore) ||
           this.isInside(x, y, this.buttons.back)) {
           if (this.battleMode === "elvis") this.state = "elvisVictoryDialogue";
+          else if (this.battleMode === "boss") this.state = "bossVictoryDialogue";
           else this.state = "victoryDialogue";
         }
       } else if (this.isInside(x, y, this.buttons.back)) {
@@ -1464,7 +1546,40 @@ this.hallway02WalkableArea = [
       this.canvas,
       (x, y) => this.isCommandBridgePositionAllowed(x, y)
     );
-    this.wasInteracting = this.player.wantsToInteract();
+    const interacting = this.player.wantsToInteract();
+    if (interacting && !this.wasInteracting && !this.bossDefeated && this.isNearBoss()) {
+      this.bossDialogueIndex = 0;
+      this.state = "bossDialogue";
+      this.wasInteracting = interacting;
+      return;
+    }
+    this.wasInteracting = interacting;
+  }
+
+  isNearBoss() {
+    const feet = this.player.getFootPosition(this.player.x, this.player.y);
+    return Math.hypot(feet.x - 640, feet.y - 590) <= 170;
+  }
+
+  nextBossDialogue() {
+    if (this.state !== "bossDialogue") return;
+    this.bossDialogueIndex++;
+    if (this.bossDialogueIndex >= this.bossDialogues.length) {
+      this.bossDialogueIndex = 0;
+      this.startRhythm("boss");
+    }
+  }
+
+  finishBossVictoryDialogue() {
+    if (this.state !== "bossVictoryDialogue") return;
+    this.musicAttempt++;
+    this.music.pause();
+    this.music.loop = false;
+    this.music.playbackRate = 1;
+    this.resetGame();
+    this.state = "menu";
+    this.backgroundVideo.play().catch(() => {});
+    this.lastTime = performance.now();
   }
 
   isCommandBridgePositionAllowed(x, y) {
@@ -1833,32 +1948,54 @@ if (
   }
 
   buildChart() {
+    const isBoss = this.battleMode === "boss";
+    const isMichael = this.battleMode === "michael";
+    const isElvis = this.battleMode === "elvis";
     const fullDuration = this.music.duration;
     const duration = Number.isFinite(fullDuration)
       ? Math.max(0, fullDuration - this.musicStartOffset) : NaN;
-    const isMichael = this.battleMode === "michael";
-    const isElvis = this.battleMode === "elvis";
-    let total = isMichael ? 48 : isElvis ? 36 : 24;
-    let interval = isMichael ? 0.46 : isElvis ? 0.65 : 0.85;
-    let first = isMichael ? 2.2 : 3;
-    if (Number.isFinite(duration) && duration > 0) {
+    let total = isBoss ? 120 : isMichael ? 48 : isElvis ? 36 : 24;
+    let interval = isBoss ? 0.49 : isMichael ? 0.46 : isElvis ? 0.65 : 0.85;
+    let first = isBoss ? 1.8 : isMichael ? 2.2 : 3;
+
+    if (!isBoss && Number.isFinite(duration) && duration > 0) {
       first = isMichael ? 2.2 : Math.min(3, Math.max(0.5, duration * 0.15));
       if (isMichael) interval = Math.min(0.5, Math.max(0.34, (duration - first - 0.8) / 48));
       else if (isElvis) interval = Math.min(0.78, Math.max(0.56, (duration - first - 0.8) / 36));
       else interval = Math.min(1.1, Math.max(0.38, (duration - first - 0.8) / 25));
       total = Math.max(1, Math.min(total, Math.floor((duration - first - 0.4) / interval)));
     }
-    const starIndex = total >= 8 ? Math.floor(total * (0.35 + Math.random() * 0.3)) : -1;
+
+    const starIndices = new Set();
+    if (isBoss) {
+      while (starIndices.size < 2) {
+        starIndices.add(12 + Math.floor(Math.random() * (total - 24)));
+      }
+    } else if (total >= 8) {
+      starIndices.add(Math.floor(total * (0.35 + Math.random() * 0.3)));
+    }
+
     this.notes = [];
     let previousLane = -1;
     for (let i = 0; i < total; i++) {
       let lane = Math.floor(Math.random() * this.notePositions.length);
-      if (lane === previousLane) lane = (lane + 1 + Math.floor(Math.random() * 3)) % this.notePositions.length;
+      if (lane === previousLane) {
+        lane = (lane + 1 + Math.floor(Math.random() * 3)) % this.notePositions.length;
+      }
       previousLane = lane;
+      let type;
+      if (starIndices.has(i)) {
+        type = "star";
+      } else if (isBoss) {
+        const chance = Math.random();
+        type = chance < 0.76 ? "circle" : chance < 0.86 ? "double" : "crossout";
+      } else {
+        type = this.randomType();
+      }
       this.notes.push({
         id: i,
         x: this.notePositions[lane],
-        type: i === starIndex ? "star" : this.randomType(),
+        type,
         time: first + i * interval,
         status: "pending",
         firstClickTime: null
@@ -1871,16 +2008,21 @@ if (
     this.musicAttempt++;
     this.music.pause();
     this.music.playbackRate = 1;
+    this.music.loop = mode === "boss";
     this.music.muted = false;
     this.music.volume = 0.7;
 
-    const musicPath = mode === "michael"
+    const musicPath = mode === "boss"
+      ? this.bossMusicPath
+      : mode === "michael"
       ? this.michaelMusicPath
       : mode === "elvis"
         ? this.elvisMusicPath
         : this.tutorialMusicPath;
 
-    this.musicStartOffset = mode === "michael"
+    this.musicStartOffset = mode === "boss"
+      ? this.bossMusicStart
+      : mode === "michael"
       ? this.michaelMusicStart
       : mode === "elvis"
         ? this.elvisMusicStart
@@ -1907,6 +2049,8 @@ if (
     this.elvisDanceTimer = 0;
     this.michaelDanceFrame = 0;
     this.michaelDanceTimer = 0;
+    this.bossDanceFrame = 0;
+    this.bossDanceTimer = 0;
     this.musicError = false;
     this.audioStarted = false;
     this.loadingRhythm = false;
@@ -1968,6 +2112,8 @@ if (
       this.michaelDanceTimer = 0;
       this.playerDanceFrame = 0;
       this.playerDanceTimer = 0;
+      this.bossDanceFrame = 0;
+      this.bossDanceTimer = 0;
       this.feedback = "¡PREPÁRATE!";
       this.feedbackColor = "#a6ff00";
       this.feedbackTimer = 1.5;
@@ -2068,10 +2214,11 @@ if (
   }
 
   updateRhythm(deltaTime) {
-    this.rhythmTime =
-      this.getRhythmTime(deltaTime);
+    this.rhythmTime = this.battleMode === "boss"
+      ? this.rhythmTime + (this.musicError ? deltaTime : (!this.music.paused ? deltaTime * this.music.playbackRate : 0))
+      : this.getRhythmTime(deltaTime);
 
-    if (["tutorial", "elvis", "michael"].includes(this.battleMode)) {
+    if (["tutorial", "elvis", "michael", "boss"].includes(this.battleMode)) {
       this.playerDanceTimer += deltaTime;
 
       while (this.playerDanceTimer >= this.playerDanceFrameDuration) {
@@ -2112,8 +2259,8 @@ if (
 
       const allowedTime =
         note.type === "double"
-          ? this.doubleHitWindow
-          : this.hitWindow;
+          ? (this.battleMode === "boss" ? this.bossDoubleHitWindow : this.doubleHitWindow)
+          : (this.battleMode === "boss" ? this.bossHitWindow : this.hitWindow);
 
       const extraTime =
         note.type === "double" &&
@@ -2211,7 +2358,9 @@ if (
   }
   getNoteY(note) {
     const speed =
-      this.battleMode === "michael"
+      this.battleMode === "boss"
+        ? this.bossNoteSpeed
+        : this.battleMode === "michael"
         ? this.michaelNoteSpeed
         : this.battleMode === "elvis"
           ? this.elvisNoteSpeed
@@ -2227,7 +2376,9 @@ if (
     let bestDistance = Infinity;
 
     const speed =
-      this.battleMode === "michael"
+      this.battleMode === "boss"
+        ? this.bossNoteSpeed
+        : this.battleMode === "michael"
         ? this.michaelNoteSpeed
         : this.battleMode === "elvis"
           ? this.elvisNoteSpeed
@@ -2250,8 +2401,8 @@ if (
 
       const allowedTime =
         note.type === "double"
-          ? this.doubleHitWindow
-          : this.hitWindow;
+          ? (this.battleMode === "boss" ? this.bossDoubleHitWindow : this.doubleHitWindow)
+          : (this.battleMode === "boss" ? this.bossHitWindow : this.hitWindow);
 
       const allowedRadius =
         note.type === "double"
@@ -2551,6 +2702,14 @@ if (
     } else if (this.battleMode === "michael") {
       if (won) this.michaelDefeated = true;
       this.state = "rhythmEnd";
+    } else if (this.battleMode === "boss") {
+      if (won) {
+        this.bossDefeated = true;
+        this.bossVictoryIndex = 0;
+        this.state = "bossVictoryDialogue";
+      } else {
+        this.state = "rhythmEnd";
+      }
     } else if (won) {
       this.tutorialCompleted = true;
       this.state = "victoryDialogue";
@@ -2581,7 +2740,9 @@ if (
     this.speedEffectUntil = 0;
 
     this.state =
-      this.battleMode === "elvis"
+      this.battleMode === "boss"
+        ? "commandBridge"
+        : this.battleMode === "elvis"
         ? "investigation"
         : this.battleMode === "michael"
           ? "disco"
@@ -2680,7 +2841,9 @@ if (
   }
 
   drawRhythmBackground() {
-    if (this.battleMode === "michael") {
+    if (this.battleMode === "boss") {
+      this.drawCommandBridgeBackground();
+    } else if (this.battleMode === "michael") {
       this.drawDiscoBackground();
     } else if (
       this.battleMode === "elvis"
@@ -2850,7 +3013,9 @@ if (
 
     ctx.restore();
 
-    if (this.battleMode === "elvis") {
+    if (this.battleMode === "boss") {
+      this.drawBoss(970, 230, 240, 355);
+    } else if (this.battleMode === "elvis") {
       this.drawElvis(
         950,
         255,
@@ -2876,6 +3041,51 @@ if (
       this.alien.draw(ctx);
       ctx.restore();
     }
+  }
+
+  drawBoss(x, y, width, height) {
+    const ctx = this.context;
+    const active = this.battleMode === "boss" &&
+      (this.state === "rhythm" || (this.state === "paused" && this.previousState === "rhythm"));
+    const dancing = active && this.bossDanceSprites[this.bossDanceFrame];
+    const sprite = dancing && dancing.complete && dancing.naturalWidth > 0
+      ? dancing : this.bossSprite;
+    if (!sprite || !sprite.complete || sprite.naturalWidth === 0) return;
+    let bounds = this.bossImageBounds.get(sprite);
+    if (!bounds) {
+      const offscreen = document.createElement("canvas");
+      offscreen.width = sprite.naturalWidth;
+      offscreen.height = sprite.naturalHeight;
+      const source = offscreen.getContext("2d", { willReadFrequently: true });
+      source.drawImage(sprite, 0, 0);
+      try {
+        const pixels = source.getImageData(0, 0, offscreen.width, offscreen.height).data;
+        let left = offscreen.width;
+        let top = offscreen.height;
+        let right = -1;
+        let bottom = -1;
+        for (let py = 0; py < offscreen.height; py++) {
+          for (let px = 0; px < offscreen.width; px++) {
+            if (pixels[(py * offscreen.width + px) * 4 + 3] > 15) {
+              left = Math.min(left, px);
+              top = Math.min(top, py);
+              right = Math.max(right, px);
+              bottom = Math.max(bottom, py);
+            }
+          }
+        }
+        bounds = right >= left
+          ? { x: left, y: top, w: right - left + 1, h: bottom - top + 1 }
+          : { x: 0, y: 0, w: offscreen.width, h: offscreen.height };
+      } catch (error) {
+        bounds = { x: 0, y: 0, w: offscreen.width, h: offscreen.height };
+      }
+      this.bossImageBounds.set(sprite, bounds);
+    }
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sprite, bounds.x, bounds.y, bounds.w, bounds.h, x, y, width, height);
+    ctx.restore();
   }
 
   drawMichael(x, y, width, height) {
@@ -3046,9 +3256,11 @@ if (
       this.drawElvisDialogue();
     } else if (this.state === "elvisVictoryDialogue") {
       this.drawElvisVictoryDialogue();
-    } else if (
-      this.state === "victoryDialogue"
-    ) {
+    } else if (this.state === "bossDialogue") {
+      this.drawBossDialogue();
+    } else if (this.state === "bossVictoryDialogue") {
+      this.drawBossVictoryDialogue();
+    } else if (this.state === "victoryDialogue") {
       this.drawVictoryDialogue();
     } else if (
       this.state === "rhythmIntro"
@@ -3440,7 +3652,66 @@ if (
 
   drawCommandBridge() {
     this.drawCommandBridgeBackground();
+    this.drawBoss(
+      this.bossPosition.x,
+      this.bossPosition.y,
+      this.bossPosition.width,
+      this.bossPosition.height
+    );
     this.player.draw(this.context);
+    const ctx = this.context;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.font = "bold 18px Silkscreen";
+    if (!this.bossDefeated && this.isNearBoss()) {
+      ctx.fillStyle = "#ffdc69";
+      ctx.fillText("PRESIONA E PARA DESAFIAR A JOHANN BACH", 640, 690);
+    } else if (this.bossDefeated) {
+      ctx.fillStyle = "#a6ff00";
+      ctx.fillText("¡DERROTASTE AL JEFE FINAL!", 640, 690);
+    }
+    ctx.restore();
+  }
+
+  drawBossDialogue() {
+    this.drawCommandBridgeBackground();
+    this.drawBoss(this.bossPosition.x, this.bossPosition.y,
+      this.bossPosition.width, this.bossPosition.height);
+    this.player.draw(this.context);
+    const dialogue = this.bossDialogues[this.bossDialogueIndex];
+    if (!dialogue) return;
+    this.drawCharacterConversation(
+      this.bossDialoguePortrait, "JOHANN BACH", "#ffdc69", dialogue.text,
+      "CLIC PARA CONTINUAR >", dialogue.speaker
+    );
+  }
+
+  drawBossVictoryDialogue() {
+    this.drawCommandBridgeBackground();
+    this.drawBoss(this.bossPosition.x, this.bossPosition.y,
+      this.bossPosition.width, this.bossPosition.height);
+    this.player.draw(this.context);
+    const dialogue = this.bossVictoryDialogues[this.bossVictoryIndex];
+    const last = this.bossVictoryIndex === this.bossVictoryDialogues.length - 1;
+    this.drawCharacterConversation(
+      this.bossDialoguePortrait, "JOHANN BACH", "#a6ff00",
+      dialogue.text, last ? "VOLVER A CASA ARRIBA" : "CLIC PARA CONTINUAR >", dialogue.speaker
+    );
+    if (last) {
+      const ctx = this.context;
+      const button = this.buttons.returnHome;
+      ctx.save();
+      ctx.fillStyle = "#a6ff00";
+      ctx.fillRect(button.x, button.y, button.width, button.height);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(button.x, button.y, button.width, button.height);
+      ctx.fillStyle = "#101225";
+      ctx.font = "bold 24px Silkscreen";
+      ctx.textAlign = "center";
+      ctx.fillText("VOLVER A CASA", button.x + button.width / 2, button.y + 46);
+      ctx.restore();
+    }
   }
 
   drawHallway03PaperReading() {
@@ -3739,10 +4010,12 @@ if (
       this.drawComic();
     } else if (this.previousState === "controls") {
       this.drawControls();
-    } else if (
-      this.previousState === "dialogue"
-    ) {
+    } else if (this.previousState === "dialogue") {
       this.drawDialogue();
+    } else if (this.previousState === "bossDialogue") {
+      this.drawBossDialogue();
+    } else if (this.previousState === "bossVictoryDialogue") {
+      this.drawBossVictoryDialogue();
     } else if (this.previousState === "elvisDialogue") {
       this.drawElvisDialogue();
     } else if (this.previousState === "elvisVictoryDialogue") {
@@ -4019,6 +4292,10 @@ if (
   }
 
   drawRhythmIntro() {
+    if (this.battleMode === "boss") {
+      this.drawBossIntro();
+      return;
+    }
     if (this.battleMode === "elvis") {
       this.drawElvisIntro();
       return;
@@ -4155,6 +4432,33 @@ if (
     this.drawBackButton();
   }
 
+  drawBossIntro() {
+    const ctx = this.context;
+    this.drawCommandBridgeBackground();
+    ctx.fillStyle = "rgba(5,3,22,0.88)";
+    ctx.fillRect(0, 0, 1280, 720);
+    this.drawCharacters();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#ffdc69";
+    ctx.font = "bold 42px Silkscreen";
+    ctx.fillText("BATALLA FINAL", 640, 125);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 30px Silkscreen";
+    ctx.fillText("JOHANN BACH VS NOAH", 640, 205);
+    ctx.font = "20px Silkscreen";
+    ctx.fillText("100 NOTAS • MÁXIMA VELOCIDAD", 640, 282);
+    ctx.fillText("2 ESTRELLAS ALEATORIAS", 640, 325);
+    ctx.fillStyle = "#ff60b6";
+    ctx.fillText("3 ERRORES SEGUIDOS = DERROTA", 640, 370);
+    const button = this.buttons.begin;
+    ctx.fillStyle = "#a6ff00";
+    ctx.fillRect(button.x, button.y, button.width, button.height);
+    ctx.fillStyle = "#101225";
+    ctx.font = "bold 23px Silkscreen";
+    ctx.fillText("INICIAR BATALLA", 640, 656);
+    this.drawBackButton();
+  }
+
   drawMichaelIntro() {
     const ctx = this.context;
 
@@ -4284,7 +4588,9 @@ if (
     ctx.font = "bold 30px Silkscreen";
 
     ctx.fillText(
-      this.battleMode === "michael"
+      this.battleMode === "boss"
+        ? "BATALLA FINAL: NOAH VS JOHANN BACH"
+        : this.battleMode === "michael"
         ? "NOAH VS MICHAEL ALIEN"
         : this.battleMode === "elvis"
           ? "NOAH VS ELVIS ALIEN"
@@ -4684,7 +4990,9 @@ if (
     ctx.fillStyle = victory ? "#a6ff00" : "#ff576d";
     ctx.font = "bold 37px Silkscreen";
 
-    const title = this.battleMode === "michael"
+    const title = this.battleMode === "boss"
+      ? (victory ? "¡BACH HA SIDO DERROTADO!" : "¡BACH GANA LA SINFONÍA!")
+      : this.battleMode === "michael"
       ? (victory ? "¡VICTORIA CONTRA MICHAEL!" : "¡MICHAEL TE HA DERROTADO!")
       : this.battleMode === "elvis"
         ? (victory ? "¡VICTORIA CONTRA ELVIS!" : "¡ELVIS TE HA DERROTADO!")
@@ -4701,7 +5009,7 @@ if (
     ctx.fillText(`Errores consecutivos: ${this.misses}`, 640, 405);
     ctx.fillText(`Errores totales: ${this.totalMisses}`, 640, 445);
 
-    const wonBattle = victory && (this.battleMode === "elvis" || this.battleMode === "michael");
+    const wonBattle = victory && (this.battleMode === "elvis" || this.battleMode === "michael" || this.battleMode === "boss");
 
     if (wonBattle) {
       const restart = this.buttons.battleRestart;
@@ -4735,6 +5043,10 @@ if (
     this.drawBackButton();
   }
 }
+
+
+
+
 
 
 
