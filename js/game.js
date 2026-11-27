@@ -26,6 +26,7 @@ export class Game {
     this.princeStatueImage = this.loadImage("./assets/Mini Statua Price.PNG");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
     this.discoRoom = this.loadImage("./assets/Sala disco.png");
+    this.commandBridgeImage = this.loadImage("./assets/Puente de mando.png");
     this.michaelSprite = this.loadImage("./assets/Alien/Alien Michael J.png");
     this.michaelDialoguePortrait = this.loadImage("./assets/Alien/Dialogo_Michael J.PNG");
     this.playerDialoguePortrait = this.loadImage("./assets/Player/Dialogo_player.png");
@@ -220,13 +221,41 @@ this.hallway02WalkableArea = [
     };
 
     this.hallway03WalkableArea = [
-      { x: 0, y: 610 },
-      { x: 320, y: 555 },
-      { x: 520, y: 515 },
-      { x: 640, y: 505 },
-      { x: 760, y: 515 },
-      { x: 960, y: 555 },
-      { x: 1280, y: 610 },
+      { x: 0, y: 684 },
+      { x: 20, y: 666 },
+      { x: 60, y: 653 },
+      { x: 104, y: 639 },
+      { x: 147, y: 623 },
+      { x: 192, y: 606 },
+      { x: 224, y: 600 },
+      { x: 257, y: 598 },
+      { x: 295, y: 587 },
+      { x: 333, y: 579 },
+      { x: 371, y: 562 },
+      { x: 409, y: 546 },
+      { x: 448, y: 530 },
+      { x: 480, y: 519 },
+      { x: 518, y: 515 },
+      { x: 578, y: 515 },
+      { x: 638, y: 515 },
+      { x: 693, y: 515 },
+      { x: 728, y: 513 },
+      { x: 753, y: 510 },
+      { x: 775, y: 504 },
+      { x: 797, y: 513 },
+      { x: 825, y: 524 },
+      { x: 858, y: 539 },
+      { x: 895, y: 551 },
+      { x: 931, y: 562 },
+      { x: 972, y: 576 },
+      { x: 1009, y: 589 },
+      { x: 1047, y: 602 },
+      { x: 1086, y: 620 },
+      { x: 1124, y: 635 },
+      { x: 1162, y: 650 },
+      { x: 1200, y: 665 },
+      { x: 1238, y: 680 },
+      { x: 1280, y: 696 },
       { x: 1280, y: 720 },
       { x: 0, y: 720 }
     ];
@@ -248,6 +277,57 @@ this.hallway02WalkableArea = [
     };
 
     this.hallway03PaperReading = false;
+
+    this.commandBridgeSpawn = {
+      x: 640,
+      y: 680
+    };
+
+    this.commandBridgeWalkableArea = [
+      { x: 0, y: 655 },
+      { x: 120, y: 640 },
+      { x: 230, y: 615 },
+      { x: 300, y: 590 },
+      { x: 370, y: 568 },
+      { x: 415, y: 558 },
+      { x: 865, y: 558 },
+      { x: 920, y: 570 },
+      { x: 985, y: 590 },
+      { x: 1050, y: 615 },
+      { x: 1160, y: 640 },
+      { x: 1280, y: 655 },
+      { x: 1280, y: 720 },
+      { x: 0, y: 720 }
+    ];
+
+    this.commandBridgeBlockedAreas = [
+      [
+        { x: 0, y: 480 },
+        { x: 285, y: 480 },
+        { x: 285, y: 625 },
+        { x: 0, y: 655 }
+      ],
+      [
+        { x: 995, y: 480 },
+        { x: 1280, y: 480 },
+        { x: 1280, y: 655 },
+        { x: 995, y: 625 }
+      ],
+      [
+        { x: 420, y: 420 },
+        { x: 860, y: 420 },
+        { x: 870, y: 510 },
+        { x: 835, y: 558 },
+        { x: 445, y: 558 },
+        { x: 410, y: 510 }
+      ]
+    ];
+
+    this.commandBridgeEntry = {
+      x: 640,
+      y: 545,
+      radius: 75
+    };
 
     this.discoWalkableArea = [
       { x: 0, y: 490 },
@@ -622,7 +702,7 @@ this.hallway02WalkableArea = [
           "comic", "playing", "dialogue", "elvisDialogue",
           "elvisVictoryDialogue", "victoryDialogue", "rhythmIntro",
           "rhythmTutorial", "rhythm", "rhythmEnd", "hallway", "hallway02",
-          "hallway03", "investigation", "disco"
+          "hallway03", "investigation", "disco", "commandBridge"
         ].includes(this.state)) {
           this.pauseGame();
         }
@@ -701,6 +781,10 @@ this.hallway02WalkableArea = [
 
     if (this.state === "hallway03") {
       this.updateHallway03(deltaTime);
+    }
+
+    if (this.state === "commandBridge") {
+      this.updateCommandBridge(deltaTime);
     }
 
     if (this.state === "disco") {
@@ -1341,12 +1425,56 @@ this.hallway02WalkableArea = [
       this.hallway03Spawn.y
     );
     this.player.direction = "west";
-    this.player.currentFrames = this.player.idleFrames.north;
+    this.player.currentFrames = this.player.idleFrames.west;
     this.player.frameIndex = 0;
     this.player.frameTimer = 0;
     this.player.moving = false;
     this.state = "hallway03";
     this.wasInteracting = this.player.wantsToInteract();
+  }
+
+  enterCommandBridge() {
+    this.setPlayerFeetPosition(
+      this.commandBridgeSpawn.x,
+      this.commandBridgeSpawn.y
+    );
+    this.player.direction = "north";
+    this.player.currentFrames = this.player.idleFrames.north;
+    this.player.frameIndex = 0;
+    this.player.frameTimer = 0;
+    this.player.moving = false;
+    this.state = "commandBridge";
+    this.wasInteracting = this.player.wantsToInteract();
+  }
+
+  updateCommandBridge(deltaTime) {
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => this.isCommandBridgePositionAllowed(x, y)
+    );
+    this.wasInteracting = this.player.wantsToInteract();
+  }
+
+  isCommandBridgePositionAllowed(x, y) {
+    const feet = this.player.getFootPosition(x, y);
+    if (!this.isPointInsidePolygon(feet, this.commandBridgeWalkableArea)) {
+      return false;
+    }
+    for (const area of this.commandBridgeBlockedAreas) {
+      if (this.isPointInsidePolygon(feet, area)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  isNearCommandBridgeEntry() {
+    const feet = this.player.getFootPosition();
+    return Math.hypot(
+      feet.x - this.commandBridgeEntry.x,
+      feet.y - this.commandBridgeEntry.y
+    ) <= this.commandBridgeEntry.radius;
   }
 
   updateHallway03(deltaTime) {
@@ -1377,6 +1505,15 @@ this.hallway02WalkableArea = [
     );
 
     this.player.speed = originalSpeed;
+
+    if (
+      interacting &&
+      !this.wasInteracting &&
+      this.isNearCommandBridgeEntry()
+    ) {
+      this.enterCommandBridge();
+      return;
+    }
 
     if (
       interacting &&
@@ -2521,6 +2658,10 @@ if (
     this.drawImageBackground(this.discoRoom);
   }
 
+  drawCommandBridgeBackground() {
+    this.drawImageBackground(this.commandBridgeImage);
+  }
+
   drawInvestigationBackground() {
     this.drawImageBackground(
       this.investigationRoom
@@ -2922,6 +3063,10 @@ if (
     ) {
       this.drawHallway03();
     } else if (
+      this.state === "commandBridge"
+    ) {
+      this.drawCommandBridge();
+    } else if (
       this.state === "investigation"
     ) {
       this.drawInvestigation();
@@ -3176,7 +3321,14 @@ if (
       ctx.restore();
     }
 
-    if (!this.hallway03PaperReading && this.isNearHallway03Paper()) {
+    if (!this.hallway03PaperReading && this.isNearCommandBridgeEntry()) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 18px Silkscreen";
+      ctx.fillText("PRESIONA E PARA ENTRAR", 640, 690);
+      ctx.restore();
+    } else if (!this.hallway03PaperReading && this.isNearHallway03Paper()) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
@@ -3188,6 +3340,11 @@ if (
     if (this.hallway03PaperReading) {
       this.drawHallway03PaperReading();
     }
+  }
+
+  drawCommandBridge() {
+    this.drawCommandBridgeBackground();
+    this.player.draw(this.context);
   }
 
   drawHallway03PaperReading() {
@@ -3525,6 +3682,10 @@ if (
       this.previousState === "hallway03"
     ) {
       this.drawHallway03();
+    } else if (
+      this.previousState === "commandBridge"
+    ) {
+      this.drawCommandBridge();
     } else if (
       this.previousState === "investigation"
     ) {
