@@ -1,4 +1,3 @@
-
 import { Player } from "./player.js";
 import { Enemy } from "./enemy.js";
 import { Character } from "./character.js";
@@ -21,6 +20,8 @@ export class Game {
 
     this.hallwayImage = this.loadImage("./assets/Pasillo01.png");
     this.hallway02Image = this.loadImage("./assets/Pasillo02.png");
+    this.hallway03Image = this.loadImage("./assets/Pasillo03.PNG");
+    this.hallway03PaperImage = this.loadImage("./assets/Hoja_pasillo.png");
     this.bachStatueImage = this.loadImage("./assets/Mini estatua Bach.png");
     this.princeStatueImage = this.loadImage("./assets/Mini Statua Price.PNG");
     this.investigationRoom = this.loadImage("./assets/sala-inv.png");
@@ -206,6 +207,47 @@ this.hallway02WalkableArea = [
       x: 1110,
       y: 650
     };
+
+    this.discoExitDoor = {
+      x: 65,
+      y: 610,
+      radius: 135
+    };
+
+    this.hallway03Spawn = {
+      x: 1080,
+      y: 650
+    };
+
+    this.hallway03WalkableArea = [
+      { x: 0, y: 610 },
+      { x: 320, y: 555 },
+      { x: 520, y: 515 },
+      { x: 640, y: 505 },
+      { x: 760, y: 515 },
+      { x: 960, y: 555 },
+      { x: 1280, y: 610 },
+      { x: 1280, y: 720 },
+      { x: 0, y: 720 }
+    ];
+
+    this.hallway03Perspective = {
+      topY: 540,
+      bottomY: 700,
+      farScale: 0.48,
+      nearScale: 1,
+      farSpeed: 90,
+      nearSpeed: 170
+    };
+
+    this.hallway03Paper = {
+      x: 255,
+      y: 650,
+      radiusX: 115,
+      radiusY: 90
+    };
+
+    this.hallway03PaperReading = false;
 
     this.discoWalkableArea = [
       { x: 0, y: 490 },
@@ -580,7 +622,7 @@ this.hallway02WalkableArea = [
           "comic", "playing", "dialogue", "elvisDialogue",
           "elvisVictoryDialogue", "victoryDialogue", "rhythmIntro",
           "rhythmTutorial", "rhythm", "rhythmEnd", "hallway", "hallway02",
-          "investigation", "disco"
+          "hallway03", "investigation", "disco"
         ].includes(this.state)) {
           this.pauseGame();
         }
@@ -655,6 +697,10 @@ this.hallway02WalkableArea = [
 
     if (this.state === "hallway02") {
       this.updateHallway02(deltaTime);
+    }
+
+    if (this.state === "hallway03") {
+      this.updateHallway03(deltaTime);
     }
 
     if (this.state === "disco") {
@@ -787,6 +833,7 @@ this.hallway02WalkableArea = [
     this.resetPlayerPosition();
 
     this.tutorialCompleted = false;
+    this.hallway03PaperReading = false;
     this.elvisDefeated = false;
     this.elvisVictoryShown = false;
     this.elvisDialogueIndex = 0;
@@ -1114,6 +1161,16 @@ this.hallway02WalkableArea = [
     );
 
     if (
+      this.michaelDefeated &&
+      interacting &&
+      !this.wasInteracting &&
+      this.isNearDiscoExit()
+    ) {
+      this.enterHallway03();
+      return;
+    }
+
+    if (
       !this.michaelDefeated &&
       interacting &&
       !this.wasInteracting &&
@@ -1125,6 +1182,18 @@ this.hallway02WalkableArea = [
     }
 
     this.wasInteracting = interacting;
+  }
+
+  isNearDiscoExit() {
+    const feet = this.player.getFootPosition(
+      this.player.x,
+      this.player.y
+    );
+
+    return Math.hypot(
+      feet.x - this.discoExitDoor.x,
+      feet.y - this.discoExitDoor.y
+    ) <= this.discoExitDoor.radius;
   }
 
   isNearMichael() {
@@ -1264,6 +1333,95 @@ this.hallway02WalkableArea = [
     this.player.moving = false;
     this.state = "disco";
     this.wasInteracting = this.player.wantsToInteract();
+  }
+
+  enterHallway03() {
+    this.setPlayerFeetPosition(
+      this.hallway03Spawn.x,
+      this.hallway03Spawn.y
+    );
+    this.player.direction = "west";
+    this.player.currentFrames = this.player.idleFrames.north;
+    this.player.frameIndex = 0;
+    this.player.frameTimer = 0;
+    this.player.moving = false;
+    this.state = "hallway03";
+    this.wasInteracting = this.player.wantsToInteract();
+  }
+
+  updateHallway03(deltaTime) {
+    const interacting = this.player.wantsToInteract();
+
+    if (this.hallway03PaperReading) {
+      if (interacting && !this.wasInteracting) {
+        this.hallway03PaperReading = false;
+      }
+
+      this.wasInteracting = interacting;
+      return;
+    }
+
+    const perspective = this.hallway03Perspective;
+    const originalSpeed = this.player.speed;
+    const feetBeforeMove = this.player.getFootPosition();
+    const progress = this.getHallway03Progress(feetBeforeMove.y);
+
+    this.player.speed =
+      perspective.farSpeed +
+      (perspective.nearSpeed - perspective.farSpeed) * progress;
+
+    this.player.update(
+      deltaTime,
+      this.canvas,
+      (x, y) => this.isHallway03PositionAllowed(x, y)
+    );
+
+    this.player.speed = originalSpeed;
+
+    if (
+      interacting &&
+      !this.wasInteracting &&
+      this.isNearHallway03Paper()
+    ) {
+      this.hallway03PaperReading = true;
+      this.wasInteracting = interacting;
+      return;
+    }
+
+    this.wasInteracting = interacting;
+  }
+
+  getHallway03Progress(y) {
+    const perspective = this.hallway03Perspective;
+
+    return Math.max(
+      0,
+      Math.min(
+        1,
+        (y - perspective.topY) /
+          (perspective.bottomY - perspective.topY)
+      )
+    );
+  }
+
+  isNearHallway03Paper() {
+    const feet = this.player.getFootPosition();
+    const paper = this.hallway03Paper;
+    const horizontalDistance = (feet.x - paper.x) / paper.radiusX;
+    const verticalDistance = (feet.y - paper.y) / paper.radiusY;
+
+    return (
+      horizontalDistance * horizontalDistance +
+      verticalDistance * verticalDistance
+    ) <= 1;
+  }
+
+  isHallway03PositionAllowed(x, y) {
+    const feet = this.player.getFootPosition(x, y);
+    return this.isPointInsidePolygon(
+      feet,
+      this.hallway03WalkableArea
+    );
   }
 
   isDiscoPositionAllowed(x, y) {
@@ -2355,6 +2513,10 @@ if (
     this.drawImageBackground(this.hallway02Image);
   }
 
+  drawHallway03Background() {
+    this.drawImageBackground(this.hallway03Image);
+  }
+
   drawDiscoBackground() {
     this.drawImageBackground(this.discoRoom);
   }
@@ -2756,6 +2918,10 @@ if (
     ) {
       this.drawHallway02();
     } else if (
+      this.state === "hallway03"
+    ) {
+      this.drawHallway03();
+    } else if (
       this.state === "investigation"
     ) {
       this.drawInvestigation();
@@ -2986,6 +3152,93 @@ if (
     }
   }
 
+  drawHallway03() {
+    this.drawHallway03Background();
+
+    const ctx = this.context;
+    const playerFeet = this.player.getFootPosition();
+    const playerProgress = this.getHallway03Progress(playerFeet.y);
+    const playerScale =
+      this.hallway03Perspective.farScale +
+      (this.hallway03Perspective.nearScale - this.hallway03Perspective.farScale) * playerProgress;
+
+    const frame = this.player.currentFrames[this.player.frameIndex];
+
+    if (frame && frame.complete && frame.naturalWidth > 0) {
+      const drawWidth = this.player.width * playerScale;
+      const drawHeight = this.player.height * playerScale;
+      const drawX = playerFeet.x - drawWidth / 2;
+      const drawY = playerFeet.y - drawHeight * 0.9;
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(frame, drawX, drawY, drawWidth, drawHeight);
+      ctx.restore();
+    }
+
+    if (!this.hallway03PaperReading && this.isNearHallway03Paper()) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px Silkscreen";
+      ctx.fillText("PRESIONA E PARA LEER", 255, 690);
+      ctx.restore();
+    }
+
+    if (this.hallway03PaperReading) {
+      this.drawHallway03PaperReading();
+    }
+  }
+
+  drawHallway03PaperReading() {
+    const ctx = this.context;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.82)";
+    ctx.fillRect(0, 0, 1280, 720);
+
+    ctx.fillStyle = "#17152b";
+    ctx.fillRect(300, 55, 680, 610);
+
+    ctx.strokeStyle = "#f4dca0";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(300, 55, 680, 610);
+
+    if (
+      this.hallway03PaperImage.complete &&
+      this.hallway03PaperImage.naturalWidth > 0
+    ) {
+      const maxWidth = 540;
+      const maxHeight = 500;
+      const imageRatio =
+        this.hallway03PaperImage.naturalWidth /
+        this.hallway03PaperImage.naturalHeight;
+
+      let width = maxWidth;
+      let height = width / imageRatio;
+
+      if (height > maxHeight) {
+        height = maxHeight;
+        width = height * imageRatio;
+      }
+
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        this.hallway03PaperImage,
+        640 - width / 2,
+        340 - height / 2,
+        width,
+        height
+      );
+    }
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px Silkscreen";
+    ctx.fillText("PRESIONA E PARA CERRAR", 640, 625);
+    ctx.restore();
+  }
+
   drawHallway02() {
     const ctx = this.context;
 
@@ -3099,13 +3352,19 @@ if (
 
     if (this.activeMichaelDialogue >= 0) {
       this.drawMichaelDialogue();
-   
-    } else if (this.isNearMichael()) {
+    } else if (!this.michaelDefeated && this.isNearMichael()) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 20px Silkscreen";
       ctx.fillText("PRESIONA E PARA HABLAR", 640, 675);
+      ctx.restore();
+    } else if (this.michaelDefeated && this.isNearDiscoExit()) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#a6ff00";
+      ctx.font = "bold 20px Silkscreen";
+      ctx.fillText("PRESIONA E PARA CONTINUAR", 640, 675);
       ctx.restore();
     }
   }
@@ -3262,6 +3521,10 @@ if (
       this.previousState === "hallway02"
     ) {
       this.drawHallway02();
+    } else if (
+      this.previousState === "hallway03"
+    ) {
+      this.drawHallway03();
     } else if (
       this.previousState === "investigation"
     ) {
@@ -4213,7 +4476,3 @@ if (
     this.drawBackButton();
   }
 }
-
-
-
-
